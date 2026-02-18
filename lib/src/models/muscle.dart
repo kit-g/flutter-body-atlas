@@ -63,7 +63,11 @@ enum Muscle {
   trapeziusLowerLeft('trapezius_lower_l'),
   trapeziusLowerRight('trapezius_lower_r'),
   trapeziusUpperLeft('trapezius_upper_l'),
-  trapeziusUpperRight('trapezius_upper_r')
+  trapeziusUpperRight('trapezius_upper_r'),
+
+  // adductors
+  adductorMagnusLeft('adductor_magnus_l'),
+  adductorMagnusRight('adductor_magnus_r')
   ;
 
   const Muscle(this.id);
@@ -539,6 +543,31 @@ abstract final class MuscleCatalog {
     ),
   ];
 
+  static const adductors = <MuscleInfo>[
+    MuscleInfo(
+      muscle: .adductorMagnusLeft,
+      displayName: 'Adductor Magnus — Left',
+      group: .adductors,
+      side: .left,
+      aliases: <String>[
+        'adductor magnus',
+        'adductors',
+        'inner thigh',
+      ],
+    ),
+    MuscleInfo(
+      muscle: .adductorMagnusRight,
+      displayName: 'Adductor Magnus — Right',
+      group: .adductors,
+      side: .right,
+      aliases: <String>[
+        'adductor magnus',
+        'adductors',
+        'inner thigh',
+      ],
+    ),
+  ];
+
   static const all = <MuscleInfo>[
     ...hamstrings,
     ...legs,
@@ -548,6 +577,7 @@ abstract final class MuscleCatalog {
     ...neck,
     ...back,
     ...shoulders,
+    ...adductors,
   ];
 
   static final byId = <String, MuscleInfo>{for (final info in all) info.id: info};
