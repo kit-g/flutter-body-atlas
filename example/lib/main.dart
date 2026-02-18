@@ -38,11 +38,21 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
     super.dispose();
   }
 
+  void _toggle(MuscleInfo item) {
+    setState(() {
+      if (_selected.contains(item)) {
+        _selected.remove(item);
+      } else {
+        _selected.add(item);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
-        padding: .all(8),
+        padding: const .all(8),
         child: Row(
           children: [
             SizedBox(
@@ -52,7 +62,9 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
                   Padding(
                     padding: const .all(8.0),
                     child: TextField(
-                      decoration: InputDecoration(hint: Text('Try searching, e.g., "triceps"')),
+                      decoration: const InputDecoration(
+                        hintText: 'Try searching, e.g., "triceps"',
+                      ),
                       controller: _searchController,
                     ),
                   ),
@@ -64,17 +76,11 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
                         return ListView(
                           children: found.map(
                             (item) {
+                              final selected = _selected.contains(item);
                               return ListTile(
+                                selected: selected,
                                 title: Text(item.displayName),
-                                onTap: () {
-                                  setState(() {
-                                    if (_selected.contains(item)) {
-                                      _selected.remove(item);
-                                    } else {
-                                      _selected.add(item);
-                                    }
-                                  });
-                                },
+                                onTap: () => _toggle(item),
                               );
                             },
                           ).toList(),
@@ -85,11 +91,12 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
                 ],
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(width: 16),
             Expanded(
               flex: 3,
               child: BodyAtlasView(
                 view: .musclesBack,
+                onMuscleTap: _toggle,
                 highlightedMuscles: Map<MuscleInfo, Color?>.fromIterables(
                   _selected,
                   List.generate(_selected.length, (_) => Colors.orange[700]),
