@@ -53,7 +53,7 @@ void main() {
       );
     });
 
-    test('Catalog covers every Muscle value (1:1 for this POC)', () {
+    test('Catalog covers every Muscle value', () {
       final catalogMuscles = MuscleCatalog.all.map((i) => i.muscle).toSet();
       final enumMuscles = Muscle.values.toSet();
 
