@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 enum AtlasAsset {
@@ -11,6 +12,12 @@ enum AtlasAsset {
   const AtlasAsset(this.path);
 
   static const package = 'flutter_body_atlas';
+
+  /// Loads the SVG content from the package assets.
+  Future<String> loadSvg() {
+    final key = 'packages/$package/$path';
+    return rootBundle.loadString(key);
+  }
 }
 
 class SvgAsset extends StatelessWidget {
