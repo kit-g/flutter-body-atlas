@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_body_atlas/flutter_body_atlas.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,56 +11,93 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
+      title: 'Flutter Body Atlas Demo',
       theme: ThemeData(
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const BodyAtlasDemo(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
+class BodyAtlasDemo extends StatefulWidget {
+  const BodyAtlasDemo({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<BodyAtlasDemo> createState() => _BodyAtlasDemoState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
+  final _searchController = TextEditingController();
+  final _selected = <MuscleInfo>{};
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: .center,
+      body: Padding(
+        padding: .all(8),
+        child: Row(
           children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            SizedBox(
+              width: 300,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const .all(8.0),
+                    child: TextField(
+                      decoration: InputDecoration(hint: Text('Try searching, e.g., "triceps"')),
+                      controller: _searchController,
+                    ),
+                  ),
+                  Expanded(
+                    child: ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _searchController,
+                      builder: (_, v, _) {
+                        final found = MuscleCatalog.search(v.text.trim());
+                        return ListView(
+                          children: found.map(
+                            (item) {
+                              return ListTile(
+                                title: Text(item.displayName),
+                                onTap: () {
+                                  setState(() {
+                                    if (_selected.contains(item)) {
+                                      _selected.remove(item);
+                                    } else {
+                                      _selected.add(item);
+                                    }
+                                  });
+                                },
+                              );
+                            },
+                          ).toList(),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 16),
+            Expanded(
+              flex: 3,
+              child: BodyAtlasView(
+                view: .musclesBack,
+                highlightedMuscles: Map<MuscleInfo, Color?>.fromIterables(
+                  _selected,
+                  List.generate(_selected.length, (_) => Colors.orange[700]),
+                ),
+              ),
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
