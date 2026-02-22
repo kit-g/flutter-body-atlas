@@ -31,13 +31,7 @@ class BodyAtlasDemo extends StatefulWidget {
 class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
   final _searchController = TextEditingController();
   final _selected = <MuscleInfo>{};
-
-  @override
-  void initState() {
-    super.initState();
-
-    _selected.addAll(MuscleCatalog.all);
-  }
+  MuscleInfo? _hoveredOver;
 
   @override
   void dispose() {
@@ -123,9 +117,13 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
     return InteractiveViewer(
       child: BodyAtlasView(
         view: asset,
-        onMuscleTap: _toggle,
-        // onMuscleHover: print,
-        highlightedMuscles: Map<MuscleInfo, Color?>.fromIterables(
+        onTapElement: _toggle,
+        hoveredOver: _hoveredOver,
+        onHoverOverElement: (m) {
+          setState(() => _hoveredOver = m);
+        },
+        hoverColor: Colors.teal,
+        colorMapping: Map<MuscleInfo, Color?>.fromIterables(
           _selected,
           List.generate(
             _selected.length,

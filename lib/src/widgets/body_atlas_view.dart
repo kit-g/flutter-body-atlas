@@ -2,16 +2,28 @@ part of 'widgets.dart';
 
 class BodyAtlasView extends StatefulWidget {
   final AtlasAsset view;
-  final Map<MuscleInfo, Color?>? highlightedMuscles;
-  final ValueChanged<MuscleInfo>? onMuscleTap;
-  final ValueChanged<MuscleInfo?>? onMuscleHover;
+
+  /// Explicit highlight colors (e.g., selection, engagement map).
+  final Map<MuscleInfo, Color?>? colorMapping;
+
+  /// Optional hover styling (desktop/web).
+  ///
+  /// If [hoveredOver] is also present in [colorMapping], the highlighted
+  /// color wins (i.e., hover does not override selection by default).
+  final MuscleInfo? hoveredOver;
+  final Color? hoverColor;
+
+  final ValueChanged<MuscleInfo>? onTapElement;
+  final ValueChanged<MuscleInfo?>? onHoverOverElement;
 
   const BodyAtlasView({
     super.key,
     required this.view,
-    this.highlightedMuscles,
-    this.onMuscleTap,
-    this.onMuscleHover,
+    this.colorMapping,
+    this.hoveredOver,
+    this.hoverColor,
+    this.onTapElement,
+    this.onHoverOverElement,
   });
 
   @override
@@ -41,6 +53,7 @@ class _BodyAtlasViewState extends State<BodyAtlasView> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = kIsWeb || <TargetPlatform>[.windows, .linux, .macOS].contains(Theme.of(context).platform);
+    final hoverColor = widget.hoverColor ?? Theme.of(context).colorScheme.secondary;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -53,13 +66,23 @@ class _BodyAtlasViewState extends State<BodyAtlasView> {
               path: widget.view.path,
               colorMapper: (id) {
                 if (id == null) return null;
-                return widget.highlightedMuscles?[MuscleCatalog.tryById(id)];
+
+                final info = MuscleCatalog.tryById(id);
+                if (info == null) return null;
+
+                final highlighted = widget.colorMapping?[info];
+                if (highlighted != null) return highlighted;
+
+                final hovered = widget.hoveredOver;
+                if (hovered != null && identical(info, hovered)) return hoverColor;
+
+                return null;
               },
             );
 
             Widget interactiveChild = GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTapDown: switch ((widget.onMuscleTap, tester)) {
+              onTapDown: switch ((widget.onTapElement, tester)) {
                 (ValueChanged<MuscleInfo> onTap, _AtlasHitTester tester) => (details) {
                   final box = _interactionKey.box;
                   if (box == null || !box.hasSize) return;
@@ -75,7 +98,7 @@ class _BodyAtlasViewState extends State<BodyAtlasView> {
               child: svg,
             );
 
-            if (isDesktop && tester != null && widget.onMuscleHover != null) {
+            if (isDesktop && tester != null && widget.onHoverOverElement != null) {
               interactiveChild = MouseRegion(
                 hitTestBehavior: HitTestBehavior.opaque,
                 cursor: SystemMouseCursors.click,
@@ -106,7 +129,7 @@ class _BodyAtlasViewState extends State<BodyAtlasView> {
     if (_hoveredId == id) return;
     _hoveredId = id;
 
-    final callback = widget.onMuscleHover;
+    final callback = widget.onHoverOverElement;
     if (callback == null) return;
     callback(id == null ? null : MuscleCatalog.tryById(id));
   }
