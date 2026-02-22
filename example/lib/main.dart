@@ -94,29 +94,64 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
             const SizedBox(width: 16),
             Expanded(
               flex: 3,
-              child: BodyAtlasView(
-                view: .musclesBack,
-                onMuscleTap: _toggle,
-                highlightedMuscles: Map<MuscleInfo, Color?>.fromIterables(
-                  _selected,
-                  List.generate(
-                    _selected.length,
-                    (index) {
-                      final muscle = _selected.toList()[index];
-                      return switch (muscle.group) {
-                        .legs => Colors.purple[500],
-                        .adductors => Colors.orange[500],
-                        .hamstrings => Colors.green[500],
-                        .glutes => Colors.teal[500],
-                        .arms => Colors.blue[500],
-                        .neck => Colors.red[500],
-                        .back => Colors.pink[500],
-                        .core => Colors.yellow[500],
-                        .shoulders => Colors.brown[500],
-                      };
-                    },
+              child: Column(
+                children: [
+                  Expanded(
+                    child: BodyAtlasView(
+                      view: .musclesFront,
+                      onMuscleTap: _toggle,
+                      highlightedMuscles: Map<MuscleInfo, Color?>.fromIterables(
+                        _selected,
+                        List.generate(
+                          _selected.length,
+                          (index) {
+                            final muscle = _selected.toList()[index];
+                            return switch (muscle.group) {
+                              .legs => Colors.purple[500],
+                              .adductors => Colors.orange[500],
+                              .hamstrings => Colors.green[500],
+                              .glutes => Colors.teal[500],
+                              .arms => Colors.blue[500],
+                              .neck => Colors.red[500],
+                              .back => Colors.pink[500],
+                              .core => Colors.yellow[500],
+                              .shoulders => Colors.brown[500],
+                            };
+                          },
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  SizedBox(height: 8),
+                  Expanded(
+                    child: BodyAtlasView(
+                      view: .musclesBack,
+                      onMuscleTap: _toggle,
+                      // ignore: avoid_print
+                      onMuscleHover: (m) => print(m?.muscle),
+                      highlightedMuscles: Map<MuscleInfo, Color?>.fromIterables(
+                        _selected,
+                        List.generate(
+                          _selected.length,
+                          (index) {
+                            final muscle = _selected.toList()[index];
+                            return switch (muscle.group) {
+                              .legs => Colors.purple[500],
+                              .adductors => Colors.orange[500],
+                              .hamstrings => Colors.green[500],
+                              .glutes => Colors.teal[500],
+                              .arms => Colors.blue[500],
+                              .neck => Colors.red[500],
+                              .back => Colors.pink[500],
+                              .core => Colors.yellow[500],
+                              .shoulders => Colors.brown[500],
+                            };
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
