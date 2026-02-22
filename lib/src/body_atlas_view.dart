@@ -42,42 +42,59 @@ class _BodyAtlasViewState extends State<BodyAtlasView> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final size = Size(constraints.maxWidth, constraints.maxHeight);
+    return FutureBuilder<_AtlasHitTester>(
+      future: _hitTester,
+      builder: (context, snapshot) {
+        final tester = snapshot.data;
 
-        return FutureBuilder<_AtlasHitTester>(
-          future: _hitTester,
-          builder: (context, snapshot) {
-            final tester = snapshot.data;
+        return GestureDetector(
+          behavior: .opaque,
+          onTapDown: switch ((widget.onMuscleTap, tester)) {
+            (ValueChanged<MuscleInfo> onTap, _AtlasHitTester tester) => (details) {
+              final box = context.findRenderObject() as RenderBox?;
+              if (box == null) return;
 
-            return GestureDetector(
-              behavior: .opaque,
-              onTapDown: switch ((widget.onMuscleTap, tester)) {
-                (ValueChanged<MuscleInfo> onTap, _AtlasHitTester tester) => (details) {
-                  final local = details.localPosition;
-                  final id = tester.hitTest(local, size);
-                  if (id == null) return;
+              final local = details.localPosition;
+              final id = tester.hitTest(local, box.size);
+              if (id == null) return;
 
-                  final info = MuscleCatalog.tryById(id);
-                  if (info == null) return;
+              final info = MuscleCatalog.tryById(id);
+              if (info == null) return;
 
-                  onTap(info);
-                },
-                _ => null,
-              },
-              child: SvgAsset(
-                path: widget.view.path,
-                colorMapper: (id) {
-                  if (id == null) return null;
-                  return widget.highlightedMuscles?[MuscleCatalog.tryById(id)];
-                },
-              ),
-            );
+              onTap(info);
+            },
+            _ => null,
           },
+          child: SvgAsset(
+            path: widget.view.path,
+            colorMapper: (id) {
+              if (id == null) return null;
+              return widget.highlightedMuscles?[MuscleCatalog.tryById(id)];
+            },
+          ),
         );
       },
     );
+  }
+}
+
+extension on String {
+  Rect toViewBox() {
+    // default to something sensible if missing
+    if (trim().isEmpty) {
+      return const Rect.fromLTWH(0, 0, 1, 1);
+    }
+    switch (trim().split(RegExp(r'[\s,]+')).where((e) => e.isNotEmpty).toList()) {
+      case [String xs, String ys, String ws, String hs]:
+        return Rect.fromLTWH(
+          double.tryParse(xs) ?? 0,
+          double.tryParse(ys) ?? 0,
+          double.tryParse(ws) ?? 0,
+          double.tryParse(hs) ?? 0,
+        );
+      default:
+        return const Rect.fromLTWH(0, 0, 1, 1);
+    }
   }
 }
 
@@ -110,7 +127,7 @@ final class _AtlasHitTester {
 
     final svg = doc.findAllElements('svg').first;
     final viewBoxAttr = svg.getAttribute('viewBox');
-    final viewBox = _parseViewBox(viewBoxAttr);
+    final viewBox = (viewBoxAttr ?? '').toViewBox();
 
     final paths = doc.findAllElements('path').map(fromXmlElement).nonNulls.toList();
 
@@ -133,30 +150,11 @@ final class _AtlasHitTester {
   }
 }
 
-Rect _parseViewBox(String? viewBox) {
-  // default to something sensible if missing
-  if (viewBox == null || viewBox.trim().isEmpty) {
-    return const Rect.fromLTWH(0, 0, 1, 1);
-  }
-  final parts = viewBox.trim().split(RegExp(r'[\s,]+')).where((e) => e.isNotEmpty).toList();
-
-  if (parts.length != 4) return const Rect.fromLTWH(0, 0, 1, 1);
-
-  final x = double.tryParse(parts[0]) ?? 0;
-  final y = double.tryParse(parts[1]) ?? 0;
-  final w = double.tryParse(parts[2]) ?? 1;
-  final h = double.tryParse(parts[3]) ?? 1;
-  return Rect.fromLTWH(x, y, w, h);
-}
-
 /// Matches `SvgPicture`’s default behavior closely enough:
 /// `fit: BoxFit.contain`, centered.
 ///
 /// Returns a matrix that converts widget-local coordinates -> viewBox coordinates.
-Matrix4 _inverseViewBoxTransform({
-  required Rect viewBox,
-  required Size size,
-}) {
+Matrix4 _inverseViewBoxTransform({required Rect viewBox, required Size size}) {
   final vb = Size(viewBox.width, viewBox.height);
 
   // avoid division by zero.
