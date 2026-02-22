@@ -33,6 +33,13 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
   final _selected = <MuscleInfo>{};
 
   @override
+  void initState() {
+    super.initState();
+
+    _selected.addAll(MuscleCatalog.all);
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -97,59 +104,11 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
               child: Column(
                 children: [
                   Expanded(
-                    child: BodyAtlasView(
-                      view: .musclesFront,
-                      onMuscleTap: _toggle,
-                      highlightedMuscles: Map<MuscleInfo, Color?>.fromIterables(
-                        _selected,
-                        List.generate(
-                          _selected.length,
-                          (index) {
-                            final muscle = _selected.toList()[index];
-                            return switch (muscle.group) {
-                              .legs => Colors.purple[500],
-                              .adductors => Colors.orange[500],
-                              .hamstrings => Colors.green[500],
-                              .glutes => Colors.teal[500],
-                              .arms => Colors.blue[500],
-                              .neck => Colors.red[500],
-                              .back => Colors.pink[500],
-                              .core => Colors.yellow[500],
-                              .shoulders => Colors.brown[500],
-                            };
-                          },
-                        ),
-                      ),
-                    ),
+                    child: _view(.musclesFront),
                   ),
                   SizedBox(height: 8),
                   Expanded(
-                    child: BodyAtlasView(
-                      view: .musclesBack,
-                      onMuscleTap: _toggle,
-                      // ignore: avoid_print
-                      onMuscleHover: (m) => print(m?.muscle),
-                      highlightedMuscles: Map<MuscleInfo, Color?>.fromIterables(
-                        _selected,
-                        List.generate(
-                          _selected.length,
-                          (index) {
-                            final muscle = _selected.toList()[index];
-                            return switch (muscle.group) {
-                              .legs => Colors.purple[500],
-                              .adductors => Colors.orange[500],
-                              .hamstrings => Colors.green[500],
-                              .glutes => Colors.teal[500],
-                              .arms => Colors.blue[500],
-                              .neck => Colors.red[500],
-                              .back => Colors.pink[500],
-                              .core => Colors.yellow[500],
-                              .shoulders => Colors.brown[500],
-                            };
-                          },
-                        ),
-                      ),
-                    ),
+                    child: _view(.musclesBack),
                   ),
                 ],
               ),
@@ -158,5 +117,40 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
         ),
       ),
     );
+  }
+
+  Widget _view(AtlasAsset asset) {
+    return InteractiveViewer(
+      child: BodyAtlasView(
+        view: asset,
+        onMuscleTap: _toggle,
+        // onMuscleHover: print,
+        highlightedMuscles: Map<MuscleInfo, Color?>.fromIterables(
+          _selected,
+          List.generate(
+            _selected.length,
+            (index) {
+              final muscle = _selected.toList()[index];
+              return _colorOf(muscle);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color? _colorOf(MuscleInfo muscle) {
+    return switch (muscle.group) {
+      .legs => Colors.purple[500],
+      .adductors => Colors.orange[500],
+      .hamstrings => Colors.green[500],
+      .glutes => Colors.teal[500],
+      .arms => Colors.blue[500],
+      .neck => Colors.red[500],
+      .back => Colors.pink[500],
+      .core => Colors.yellow[500],
+      .shoulders => Colors.brown[500],
+      .chest => Colors.amber,
+    };
   }
 }
