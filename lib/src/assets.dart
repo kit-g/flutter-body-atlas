@@ -34,6 +34,8 @@ class SvgAsset extends StatelessWidget {
   Widget build(BuildContext context) {
     return SvgPicture.asset(
       path,
+      fit: .contain,
+      alignment: .center,
       package: AtlasAsset.package,
       colorMapper: _ColorMapper(colorMapper),
     );
