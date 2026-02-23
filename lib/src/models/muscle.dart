@@ -1,4 +1,6 @@
-enum Muscle {
+import 'contracts.dart';
+
+enum Muscle implements AtlasElement {
   // legs / hamstrings
   semimembranosus2Right('semimembranosus_2_r'),
   semimembranosus2Left('semimembranosus_2_l'),
@@ -141,6 +143,7 @@ enum Muscle {
 
   const Muscle(this.id);
 
+  @override
   final String id;
 
   static final Map<String, Muscle> _byId = {for (final m in values) m.id: m};
@@ -157,7 +160,7 @@ enum Muscle {
   String toString() => name;
 }
 
-enum MuscleGroup {
+enum MuscleGroup implements AtlasGroup {
   legs('legs'),
   adductors('adductors'),
   hamstrings('hamstrings'),
@@ -172,6 +175,7 @@ enum MuscleGroup {
 
   const MuscleGroup(this.id);
 
+  @override
   final String id;
 
   static final _byId = {for (final g in values) g.id: g};
@@ -201,7 +205,7 @@ enum BodySide {
   final String id;
 }
 
-final class MuscleInfo {
+final class MuscleInfo implements AtlasElementInfo {
   const MuscleInfo({
     required this.muscle,
     required this.displayName,
@@ -211,14 +215,17 @@ final class MuscleInfo {
   });
 
   final Muscle muscle;
+  @override
   final String displayName;
+  @override
   final MuscleGroup group;
   final BodySide side;
   final List<String> aliases;
 
-  /// Stable ID (the one that appears in the SVG).
+  @override
   String get id => muscle.id;
 
+  @override
   Iterable<String> get searchTokens sync* {
     yield displayName;
     yield id;
@@ -226,6 +233,9 @@ final class MuscleInfo {
       yield a;
     }
   }
+
+  @override
+  AtlasElement get element => muscle;
 
   @override
   String toString() {
@@ -1179,4 +1189,11 @@ abstract final class MuscleCatalog {
 extension MuscleMetadata on Muscle {
   /// Returns packaged metadata if present (it should be, for all enum values).
   MuscleInfo? get info => MuscleCatalog.byMuscle[this];
+}
+
+final class MuscleResolver implements AtlasResolver<MuscleInfo> {
+  const MuscleResolver();
+
+  @override
+  MuscleInfo? tryById(String id) => MuscleCatalog.tryById(id);
 }

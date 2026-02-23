@@ -115,8 +115,9 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
 
   Widget _view(AtlasAsset asset) {
     return InteractiveViewer(
-      child: BodyAtlasView(
+      child: BodyAtlasView<MuscleInfo>(
         view: asset,
+        resolver: const MuscleResolver(),
         onTapElement: _toggle,
         hoveredOver: _hoveredOver,
         onHoverOverElement: (m) {

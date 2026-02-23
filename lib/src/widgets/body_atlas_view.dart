@@ -1,24 +1,25 @@
 part of 'widgets.dart';
 
-class BodyAtlasView extends StatefulWidget {
+class BodyAtlasView<I extends AtlasElementInfo> extends StatefulWidget {
   final AtlasAsset view;
 
-  /// Explicit highlight colors (e.g., selection, engagement map).
-  final Map<MuscleInfo, Color?>? colorMapping;
+  /// Injected mapping from SVG id -> domain element info (muscle/organ/bone/skin).
+  final AtlasResolver<I> resolver;
+
+  /// Explicit color mapping by element info (e.g., selection/engagement).
+  final Map<I, Color?>? colorMapping;
 
   /// Optional hover styling (desktop/web).
-  ///
-  /// If [hoveredOver] is also present in [colorMapping], the highlighted
-  /// color wins (i.e., hover does not override selection by default).
-  final MuscleInfo? hoveredOver;
+  final I? hoveredOver;
   final Color? hoverColor;
 
-  final ValueChanged<MuscleInfo>? onTapElement;
-  final ValueChanged<MuscleInfo?>? onHoverOverElement;
+  final ValueChanged<I>? onTapElement;
+  final ValueChanged<I?>? onHoverOverElement;
 
   const BodyAtlasView({
     super.key,
     required this.view,
+    required this.resolver,
     this.colorMapping,
     this.hoveredOver,
     this.hoverColor,
@@ -27,10 +28,10 @@ class BodyAtlasView extends StatefulWidget {
   });
 
   @override
-  State<BodyAtlasView> createState() => _BodyAtlasViewState();
+  State<BodyAtlasView<I>> createState() => _BodyAtlasViewState<I>();
 }
 
-class _BodyAtlasViewState extends State<BodyAtlasView> {
+class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasView<I>> {
   final _interactionKey = GlobalKey();
   late Future<_AtlasHitTester> _hitTester;
   String? _hoveredId;
@@ -42,7 +43,7 @@ class _BodyAtlasViewState extends State<BodyAtlasView> {
   }
 
   @override
-  void didUpdateWidget(covariant BodyAtlasView oldWidget) {
+  void didUpdateWidget(covariant BodyAtlasView<I> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.view != widget.view) {
       _hitTester = _AtlasHitTester.load(widget.view);
@@ -67,7 +68,7 @@ class _BodyAtlasViewState extends State<BodyAtlasView> {
               colorMapper: (id) {
                 if (id == null) return null;
 
-                final info = MuscleCatalog.tryById(id);
+                final info = widget.resolver.tryById(id);
                 if (info == null) return null;
 
                 final highlighted = widget.colorMapping?[info];
@@ -83,14 +84,17 @@ class _BodyAtlasViewState extends State<BodyAtlasView> {
             Widget interactiveChild = GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTapDown: switch ((widget.onTapElement, tester)) {
-                (ValueChanged<MuscleInfo> onTap, _AtlasHitTester tester) => (details) {
+                (ValueChanged<I> onTap, _AtlasHitTester tester) => (details) {
                   final box = _interactionKey.box;
                   if (box == null || !box.hasSize) return;
+
                   final local = box.globalToLocal(details.globalPosition);
                   final id = tester.hitTest(local, box.size);
                   if (id == null) return;
-                  final info = MuscleCatalog.tryById(id);
+
+                  final info = widget.resolver.tryById(id);
                   if (info == null) return;
+
                   onTap(info);
                 },
                 _ => null,
@@ -106,6 +110,7 @@ class _BodyAtlasViewState extends State<BodyAtlasView> {
                 onHover: (event) {
                   final box = _interactionKey.box;
                   if (box == null || !box.hasSize) return;
+
                   final local = box.globalToLocal(event.position);
                   final id = tester.hitTest(local, box.size);
                   _emit(id);
@@ -114,7 +119,6 @@ class _BodyAtlasViewState extends State<BodyAtlasView> {
               );
             }
 
-            // key lives on a stable box that both hover & tap use for size + coordinate transforms.
             return SizedBox.expand(
               key: _interactionKey,
               child: interactiveChild,
@@ -129,14 +133,13 @@ class _BodyAtlasViewState extends State<BodyAtlasView> {
     if (_hoveredId == id) return;
     _hoveredId = id;
 
-    final callback = widget.onHoverOverElement;
-    if (callback == null) return;
-    callback(id == null ? null : MuscleCatalog.tryById(id));
+    final cb = widget.onHoverOverElement;
+    if (cb == null) return;
+
+    cb(id == null ? null : widget.resolver.tryById(id));
   }
 }
 
 extension on GlobalKey {
-  RenderBox? get box {
-    return currentContext?.findRenderObject() as RenderBox?;
-  }
+  RenderBox? get box => currentContext?.findRenderObject() as RenderBox?;
 }
