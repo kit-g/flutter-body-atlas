@@ -42,16 +42,6 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
     super.dispose();
   }
 
-  void _toggle(AtlasElementInfo item) {
-    setState(() {
-      if (_selected.contains(item)) {
-        _selected.remove(item);
-      } else {
-        _selected.add(item);
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,6 +62,13 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
                       controller: _searchController,
                     ),
                   ),
+                  Align(
+                    alignment: .centerRight,
+                    child: TextButton(
+                      onPressed: _toggleAll,
+                      child: Text(_selected.length == MuscleCatalog.all.toSet().length ? 'Deselect all' : 'Select all'),
+                    ),
+                  ),
                   Expanded(
                     child: ValueListenableBuilder<TextEditingValue>(
                       valueListenable: _searchController,
@@ -86,6 +83,10 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
                                 title: Text(item.displayName),
                                 subtitle: Text('aka ${item.aliases.join(', ')}'),
                                 onTap: () => _toggle(item),
+                                leading: Checkbox.adaptive(
+                                  value: _selected.contains(item),
+                                  onChanged: (_) => _toggle(item),
+                                ),
                               );
                             },
                           ).toList(),
@@ -162,5 +163,25 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
       },
       AtlasElementInfo() => null,
     };
+  }
+
+  void _toggle(AtlasElementInfo item) {
+    setState(() {
+      if (_selected.contains(item)) {
+        _selected.remove(item);
+      } else {
+        _selected.add(item);
+      }
+    });
+  }
+
+  void _toggleAll() {
+    setState(() {
+      if (_selected.length == MuscleCatalog.all.toSet().length) {
+        _selected.clear();
+      } else {
+        _selected.addAll(MuscleCatalog.all);
+      }
+    });
   }
 }
