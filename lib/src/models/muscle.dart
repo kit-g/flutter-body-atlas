@@ -1197,3 +1197,38 @@ final class MuscleResolver implements AtlasResolver<MuscleInfo> {
   @override
   MuscleInfo? tryById(String id) => MuscleCatalog.tryById(id);
 }
+
+final class MuscleLocalizerEn implements AtlasLocalizer<MuscleInfo, MuscleGroup> {
+  const MuscleLocalizerEn();
+
+  @override
+  String elementLabel(MuscleInfo element) => element.displayName;
+
+  @override
+  String groupLabel(MuscleGroup group) => group.id;
+
+  @override
+  Iterable<String> elementSearchTokens(MuscleInfo element) sync* {
+    yield element.displayName;
+    yield element.id; // handy for power users/debugging
+    yield element.group.name; // if query is "arms", biceps and triceps should match
+    for (final a in element.aliases) {
+      yield a;
+    }
+  }
+}
+
+final class MuscleSearch implements AtlasSearch<MuscleInfo> {
+  final SimpleAtlasSearch<MuscleInfo> _search;
+
+  MuscleSearch({
+    AtlasLocalizer<MuscleInfo, MuscleGroup> localizer = const MuscleLocalizerEn(),
+    List<MuscleInfo> items = MuscleCatalog.all,
+  }) : _search = SimpleAtlasSearch<MuscleInfo>(
+         items: items,
+         tokensOf: localizer.elementSearchTokens,
+       );
+
+  @override
+  List<MuscleInfo> search(String query, {int limit = 50}) => _search.search(query, limit: limit);
+}
