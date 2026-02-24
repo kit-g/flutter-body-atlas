@@ -1,0 +1,46 @@
+name: "Unit Tests"
+
+on:
+  push:
+    branches: [ "main", "ci" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: "Install dependencies, package"
+        run: flutter pub get
+
+      - name: "Format check, package"
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: "Analyze, package"
+        run: flutter analyze
+
+      - name: "Run tests, package"
+        run: flutter test
+
+      - name: "Pub publish dry-run, package"
+        run: dart pub publish --dry-run
+
+      - name: "Install dependencies, example"
+        working-directory: example
+        run: flutter pub get
+
+      - name: "Analyze, example"
+        working-directory: example
+        run: flutter analyze
