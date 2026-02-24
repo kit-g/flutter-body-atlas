@@ -7,20 +7,37 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        flutter:
+          - "3.32.x"
+          - "3.35.x"
+          - "3.39.x"
+          - "3.41.x"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Flutter
+      - name: Set up Flutter (${{ matrix.flutter }})
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: ${{ matrix.flutter }}
           cache: true
+
+      - name: Flutter/Dart versions
+        run: |
+          dart --version
+          flutter --version
 
       - name: "Install dependencies, package"
         run: flutter pub get
@@ -34,9 +51,6 @@ jobs:
       - name: "Run tests, package"
         run: flutter test
 
-      - name: "Pub publish dry-run, package"
-        run: dart pub publish --dry-run
-
       - name: "Install dependencies, example"
         working-directory: example
         run: flutter pub get
@@ -44,3 +58,7 @@ jobs:
       - name: "Analyze, example"
         working-directory: example
         run: flutter analyze
+
+      - name: "Pub publish dry-run, package (only once)"
+        if: ${{ matrix.flutter == '3.41.x' }}
+        run: dart pub publish --dry-run
