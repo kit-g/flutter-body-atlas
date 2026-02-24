@@ -1,19 +1,79 @@
 part of 'widgets.dart';
 
+
+/// An interactive SVG-based body atlas widget that displays anatomical elements
+/// (muscles, organs, bones, skin) and supports tap and hover interactions.
+///
+/// This widget renders an SVG asset and provides hit-testing capabilities to
+/// detect user interactions with individual anatomical elements. It supports
+/// custom coloring for selected or highlighted elements and optional hover
+/// effects on desktop/web platforms.
+///
+/// Type parameter [I] represents the specific type of anatomical element info
+/// (e.g., [MuscleInfo], [OrganInfo]) that extends [AtlasElementInfo].
+///
+/// Example usage:
+/// ```dart
+/// BodyAtlasView<MuscleInfo>(
+///   view: AtlasAsset.musclesFront,
+///   resolver: const MuscleResolver(),
+///   colorMapping: {muscle1: Colors.red, muscle2: Colors.blue},
+///   hoveredOver: currentMuscle,
+///   hoverColor: (color) => color.withValues(alpha: 0.5),
+///   onTapElement: (muscle) => print('Tapped: ${muscle.displayName}'),
+///   onHoverOverElement: (muscle) => setState(() => hovered = muscle),
+/// )
+/// ```
 class BodyAtlasView<I extends AtlasElementInfo> extends StatefulWidget {
+  /// The SVG asset containing the anatomical diagram to display.
+  ///
+  /// This asset should contain SVG path elements with IDs that match
+  /// the element IDs in the resolver.
   final AtlasAsset view;
 
   /// Injected mapping from SVG id -> domain element info (muscle/organ/bone/skin).
+  ///
+  /// The resolver is used to convert SVG element IDs from the asset into
+  /// strongly-typed element info objects of type [I].
   final AtlasResolver<I> resolver;
 
   /// Explicit color mapping by element info (e.g., selection/engagement).
+  ///
+  /// Maps specific element info objects to their desired colors. This is
+  /// typically used to highlight selected or engaged elements. Colors in
+  /// this mapping take precedence over hover colors.
+  ///
+  /// A null color value will use the original SVG color for that element.
   final Map<I, Color?>? colorMapping;
 
   /// Optional hover styling (desktop/web).
+  ///
+  /// The element info object that is currently being hovered over.
+  /// When non-null and [hoverColor] is provided, this element will be
+  /// rendered with the hover color styling.
   final I? hoveredOver;
+
+  /// Function to compute hover color from the original element color.
+  ///
+  /// Called when an element is hovered (specified by [hoveredOver]).
+  /// Receives the original color of the SVG element and should return
+  /// the desired hover color, or null to keep the original color.
+  ///
+  /// Example: `(color) => color.withValues(alpha: 0.5)`
   final Color? Function(Color)? hoverColor;
 
+  /// Callback invoked when a user taps on an anatomical element.
+  ///
+  /// The callback receives the [AtlasElementInfo] object corresponding
+  /// to the tapped SVG element. This is typically used to handle element
+  /// selection or navigation.
   final ValueChanged<I>? onTapElement;
+
+  /// Callback invoked when the hover state changes (desktop/web only).
+  ///
+  /// The callback receives the [AtlasElementInfo] object being hovered over,
+  /// or null when the hover exits. This is only active on desktop and web
+  /// platforms and requires a non-null value to enable hover tracking.
   final ValueChanged<I?>? onHoverOverElement;
 
   const BodyAtlasView({
