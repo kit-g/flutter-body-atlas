@@ -7,7 +7,7 @@ issue_tracker: "https://github.com/kit-g/flutter-body-atlas/issues"
 
 environment:
   sdk: ^3.10.8
-  flutter: ">=3.16.0"
+  flutter: ">=3.38.0"
 
 dependencies:
   flutter: { sdk: flutter }
