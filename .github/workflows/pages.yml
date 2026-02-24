@@ -3,7 +3,13 @@ name: "Deploy Example to GitHub Pages"
 on:
   workflow_dispatch:
   push:
-    branches: [ "main", "ci" ]
+    branches: [ "main" ]
+    paths:
+      - "example/**"
+      - "lib/**"
+      - "pubspec.yaml"
+      - "assets/**"
+      - ".github/workflows/pages.yml"
 
 permissions:
   contents: read
