@@ -134,6 +134,10 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
             _selected.length,
             (index) {
               final muscle = _selected.toList()[index];
+              if (muscle == _hoveredOver) {
+                return _colorOf(muscle)?.withValues(alpha: .5);
+              }
+
               return _colorOf(muscle);
             },
           ),
