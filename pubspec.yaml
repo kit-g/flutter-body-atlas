@@ -1,7 +1,8 @@
 name: flutter_body_atlas
 description: |
-  Interactive SVG-based body atlas for Flutter.
-version: 0.1.0
+  An interactive, SVG-based human body atlas for Flutter. 
+  High-fidelity anatomical diagrams with built-in support for hit testing, highlighting, and custom integration
+version: 0.1.1
 repository: "https://github.com/kit-g/flutter-body-atlas"
 issue_tracker: "https://github.com/kit-g/flutter-body-atlas/issues"
 homepage: "https://kit-g.github.io/flutter-body-atlas/"
