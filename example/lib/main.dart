@@ -30,8 +30,11 @@ class BodyAtlasDemo extends StatefulWidget {
 
 class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
   final _searchController = TextEditingController();
-  final _selected = <MuscleInfo>{};
-  MuscleInfo? _hoveredOver;
+  final _selected = <AtlasElementInfo>{};
+  AtlasElementInfo? _hoveredOver;
+
+  final _localizer = const MuscleLocalizerEn();
+  late final AtlasSearch<MuscleInfo> _search = MuscleSearch(localizer: _localizer);
 
   @override
   void dispose() {
@@ -39,7 +42,7 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
     super.dispose();
   }
 
-  void _toggle(MuscleInfo item) {
+  void _toggle(AtlasElementInfo item) {
     setState(() {
       if (_selected.contains(item)) {
         _selected.remove(item);
@@ -73,7 +76,7 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
                     child: ValueListenableBuilder<TextEditingValue>(
                       valueListenable: _searchController,
                       builder: (_, v, _) {
-                        final found = MuscleCatalog.search(v.text.trim());
+                        final found = _search.search(v.text.trim());
                         return ListView(
                           children: found.map(
                             (item) {
@@ -81,6 +84,7 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
                               return ListTile(
                                 selected: selected,
                                 title: Text(item.displayName),
+                                subtitle: Text('aka ${item.aliases.join(', ')}'),
                                 onTap: () => _toggle(item),
                               );
                             },
@@ -115,7 +119,7 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
 
   Widget _view(AtlasAsset asset) {
     return InteractiveViewer(
-      child: BodyAtlasView<MuscleInfo>(
+      child: BodyAtlasView(
         view: asset,
         resolver: const MuscleResolver(),
         onTapElement: _toggle,
@@ -124,7 +128,7 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
           setState(() => _hoveredOver = m);
         },
         hoverColor: Colors.teal,
-        colorMapping: Map<MuscleInfo, Color?>.fromIterables(
+        colorMapping: Map<AtlasElementInfo, Color?>.fromIterables(
           _selected,
           List.generate(
             _selected.length,
@@ -138,18 +142,21 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
     );
   }
 
-  Color? _colorOf(MuscleInfo muscle) {
-    return switch (muscle.group) {
-      .legs => Colors.purple[500],
-      .adductors => Colors.orange[500],
-      .hamstrings => Colors.green[500],
-      .glutes => Colors.teal[500],
-      .arms => Colors.blue[500],
-      .neck => Colors.red[500],
-      .back => Colors.pink[500],
-      .core => Colors.yellow[500],
-      .shoulders => Colors.brown[500],
-      .chest => Colors.amber,
+  Color? _colorOf(AtlasElementInfo element) {
+    return switch (element) {
+      MuscleInfo muscle => switch (muscle.group) {
+        .legs => Colors.purple[500],
+        .adductors => Colors.orange[500],
+        .hamstrings => Colors.green[500],
+        .glutes => Colors.teal[500],
+        .arms => Colors.blue[500],
+        .neck => Colors.red[500],
+        .back => Colors.pink[500],
+        .core => Colors.yellow[500],
+        .shoulders => Colors.brown[500],
+        .chest => Colors.amber,
+      },
+      AtlasElementInfo() => null,
     };
   }
 }
