@@ -22,7 +22,7 @@ enum AtlasAsset {
 
 class SvgAsset extends StatelessWidget {
   final String path;
-  final Color? Function(String? id) colorMapper;
+  final Color? Function(String? id, Color color) colorMapper;
 
   const SvgAsset({
     super.key,
@@ -43,12 +43,12 @@ class SvgAsset extends StatelessWidget {
 }
 
 class _ColorMapper extends ColorMapper {
-  final Color? Function(String? id) colorMapper;
+  final Color? Function(String? id, Color color) colorMapper;
 
   const _ColorMapper(this.colorMapper);
 
   @override
   Color substitute(String? id, String elementName, String attributeName, Color color) {
-    return colorMapper(id) ?? color;
+    return colorMapper(id, color) ?? color;
   }
 }

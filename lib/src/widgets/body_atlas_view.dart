@@ -11,7 +11,7 @@ class BodyAtlasView<I extends AtlasElementInfo> extends StatefulWidget {
 
   /// Optional hover styling (desktop/web).
   final I? hoveredOver;
-  final Color? hoverColor;
+  final Color? Function(Color)? hoverColor;
 
   final ValueChanged<I>? onTapElement;
   final ValueChanged<I?>? onHoverOverElement;
@@ -53,8 +53,8 @@ class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasVie
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = kIsWeb || <TargetPlatform>[.windows, .linux, .macOS].contains(Theme.of(context).platform);
-    final hoverColor = widget.hoverColor ?? Theme.of(context).colorScheme.secondary;
+    final ThemeData(:platform, :colorScheme) = Theme.of(context);
+    final isDesktop = kIsWeb || <TargetPlatform>[.windows, .linux, .macOS].contains(platform);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -65,7 +65,8 @@ class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasVie
 
             final svg = SvgAsset(
               path: widget.view.path,
-              colorMapper: (id) {
+              colorMapper: (id, color) {
+                final hoverColor = widget.hoverColor?.call(color) ?? colorScheme.secondary;
                 if (id == null) return null;
 
                 final info = widget.resolver.tryById(id);
@@ -82,7 +83,7 @@ class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasVie
             );
 
             Widget interactiveChild = GestureDetector(
-              behavior: HitTestBehavior.opaque,
+              behavior: .opaque,
               onTapDown: switch ((widget.onTapElement, tester)) {
                 (ValueChanged<I> onTap, _AtlasHitTester tester) => (details) {
                   final box = _interactionKey.box;

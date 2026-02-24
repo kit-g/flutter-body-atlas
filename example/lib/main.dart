@@ -127,7 +127,7 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
         onHoverOverElement: (m) {
           setState(() => _hoveredOver = m);
         },
-        hoverColor: Colors.teal,
+        hoverColor: (color) => color.withValues(alpha: .5),
         colorMapping: Map<AtlasElementInfo, Color?>.fromIterables(
           _selected,
           List.generate(
