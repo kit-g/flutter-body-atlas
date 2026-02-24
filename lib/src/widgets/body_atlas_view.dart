@@ -1,6 +1,5 @@
 part of 'widgets.dart';
 
-
 /// An interactive SVG-based body atlas widget that displays anatomical elements
 /// (muscles, organs, bones, skin) and supports tap and hover interactions.
 ///
