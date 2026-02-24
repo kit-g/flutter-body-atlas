@@ -4,6 +4,7 @@ description: |
 version: 0.1.0
 repository: "https://github.com/kit-g/flutter-body-atlas"
 issue_tracker: "https://github.com/kit-g/flutter-body-atlas/issues"
+homepage: "https://kit-g.github.io/flutter-body-atlas/"
 
 environment:
   sdk: ^3.10.8
