@@ -114,6 +114,17 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
                                 selected: selected,
                                 title: Text(item.displayName),
                                 subtitle: Text('aka ${item.aliases.join(', ')}'),
+                                trailing: Tooltip(
+                                  message: item.group.name,
+                                  child: Container(
+                                    height: 18,
+                                    width: 18,
+                                    decoration: BoxDecoration(
+                                      color: _colorsByMuscleGroup[item.group],
+                                      borderRadius: .circular(6),
+                                    ),
+                                  ),
+                                ),
                                 onTap: () => _toggle(item),
                                 leading: Checkbox.adaptive(
                                   value: _selected.contains(item),
