@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_body_atlas/flutter_body_atlas.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -37,7 +39,7 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
   final _localizer = const MuscleLocalizerEn();
   late final AtlasSearch<MuscleInfo> _search = MuscleSearch(localizer: _localizer);
 
-  final _colorsByMuscleGroup = <MuscleGroup, Color?>{
+  final _defaultColors = UnmodifiableMapView(<MuscleGroup, Color?>{
     .adductors: Colors.orange[500],
     .arms: Colors.blue[500],
     .back: Colors.pink[500],
@@ -48,7 +50,9 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
     .legs: Colors.purple[500],
     .neck: Colors.red[500],
     .shoulders: Colors.brown[500],
-  };
+  });
+
+  late final _colorsByMuscleGroup = Map.of(_defaultColors);
 
   @override
   void dispose() {
@@ -174,9 +178,24 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
       children: [
         Padding(
           padding: const .only(top: 8, bottom: 4, left: 12),
-          child: Text(
-            'Select colors',
-            style: Theme.of(context).textTheme.titleMedium,
+          child: Row(
+            mainAxisAlignment: .spaceBetween,
+            children: [
+              Text(
+                'Select colors',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _colorsByMuscleGroup
+                      ..clear()
+                      ..addAll(_defaultColors);
+                  });
+                },
+                child: Text('To defaults'),
+              ),
+            ],
           ),
         ),
         Expanded(
