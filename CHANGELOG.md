@@ -1,3 +1,8 @@
+## 0.1.3
+
+* Example app allows selecting a muscle group.
+* Hovering over muscle group shows muscle names.
+
 ## 0.1.2
 
 * Color picker in example app.
