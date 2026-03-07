@@ -35,6 +35,7 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
   final _searchController = TextEditingController();
   final _selected = <AtlasElementInfo>{};
   AtlasElementInfo? _hoveredOver;
+  AtlasAsset? _activeHoverAsset;
 
   final _localizer = const MuscleLocalizerEn();
   late final AtlasSearch<MuscleInfo> _search = MuscleSearch(localizer: _localizer);
@@ -151,34 +152,49 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
   Widget _view(AtlasAsset asset) {
     return Container(
       decoration: BoxDecoration(border: .all(width: .5), borderRadius: .circular(12)),
-      child: InteractiveViewer(
-        child: Padding(
-          padding: const .symmetric(vertical: 8.0),
-          child: BodyAtlasView(
-            view: asset,
-            resolver: const MuscleResolver(),
-            onTapElement: _toggle,
-            hoveredOver: _hoveredOver,
-            onHoverOverElement: (m) {
-              setState(() => _hoveredOver = m);
-            },
-            hoverColor: (color) => color.withValues(alpha: .5),
-            colorMapping: Map<AtlasElementInfo, Color?>.fromIterables(
-              _selected,
-              List.generate(
-                _selected.length,
-                (index) {
-                  final muscle = _selected.toList()[index];
-                  if (muscle == _hoveredOver) {
-                    return _colorOf(muscle)?.withValues(alpha: .5);
-                  }
-
-                  return _colorOf(muscle);
+      child: Stack(
+        children: [
+          InteractiveViewer(
+            child: Padding(
+              padding: const .symmetric(vertical: 8.0),
+              child: BodyAtlasView(
+                view: asset,
+                resolver: const MuscleResolver(),
+                onTapElement: _toggle,
+                hoveredOver: _hoveredOver,
+                onHoverOverElement: (m) {
+                  setState(
+                    () {
+                      _hoveredOver = m;
+                      _activeHoverAsset = asset;
+                    },
+                  );
                 },
+                hoverColor: (color) => color.withValues(alpha: .5),
+                colorMapping: Map<AtlasElementInfo, Color?>.fromIterables(
+                  _selected,
+                  List.generate(
+                    _selected.length,
+                    (index) {
+                      final muscle = _selected.toList()[index];
+                      if (muscle == _hoveredOver) {
+                        return _colorOf(muscle)?.withValues(alpha: .5);
+                      }
+
+                      return _colorOf(muscle);
+                    },
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+          if (asset == _activeHoverAsset)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Text(_hoveredOver?.displayName ?? ''),
+            ),
+        ],
       ),
     );
   }
