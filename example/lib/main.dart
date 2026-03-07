@@ -214,8 +214,28 @@ class _BodyAtlasDemoState extends State<BodyAtlasDemo> {
             children: _colorsByMuscleGroup.entries.map(
               (entry) {
                 final MapEntry(key: muscleGroup, value: color) = entry;
+                bool thisGroup(AtlasElementInfo m) => m.group == muscleGroup;
+                final isSelected = _selected.any(thisGroup);
+
                 return ListTile(
-                  title: Text(muscleGroup.name),
+                  title: Row(
+                    mainAxisAlignment: .spaceBetween,
+                    children: [
+                      Text(muscleGroup.name),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            if (isSelected) {
+                              _selected.removeWhere(thisGroup);
+                            } else {
+                              _selected.addAll(MuscleCatalog.all.where(thisGroup));
+                            }
+                          });
+                        },
+                        child: Text(isSelected ? 'Deselect' : 'Select'),
+                      ),
+                    ],
+                  ),
                   trailing: Container(
                     width: 28,
                     height: 28,
