@@ -1,3 +1,7 @@
+## 0.1.4
+
+* Issue with rendering in mobile release mode fixed.
+
 ## 0.1.3
 
 * Example app allows selecting a muscle group.
