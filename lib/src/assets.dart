@@ -22,12 +22,18 @@ enum AtlasAsset {
 
 class SvgAsset extends StatelessWidget {
   final String path;
-  final Color? Function(String? id, Color color) colorMapper;
+  final Map<String, Color> highlightedColors;
+  final String? hoveredId;
+  final Color defaultHoverColor;
+  final Color? Function(Color)? onHoverColor;
 
   const SvgAsset({
     super.key,
     required this.path,
-    required this.colorMapper,
+    required this.highlightedColors,
+    this.hoveredId,
+    required this.defaultHoverColor,
+    this.onHoverColor,
   });
 
   @override
@@ -37,18 +43,40 @@ class SvgAsset extends StatelessWidget {
       fit: .contain,
       alignment: .center,
       package: AtlasAsset.package,
-      colorMapper: _ColorMapper(colorMapper),
+      colorMapper: _AtlasColorMapper(
+        highlightedColors: highlightedColors,
+        hoveredId: hoveredId,
+        defaultHoverColor: defaultHoverColor,
+        onHoverColor: onHoverColor,
+      ),
     );
   }
 }
 
-class _ColorMapper extends ColorMapper {
-  final Color? Function(String? id, Color color) colorMapper;
+class _AtlasColorMapper extends ColorMapper {
+  final Map<String, Color> highlightedColors;
+  final String? hoveredId;
+  final Color defaultHoverColor;
+  final Color? Function(Color)? onHoverColor;
 
-  const _ColorMapper(this.colorMapper);
+  const _AtlasColorMapper({
+    required this.highlightedColors,
+    this.hoveredId,
+    required this.defaultHoverColor,
+    this.onHoverColor,
+  });
 
   @override
   Color substitute(String? id, String elementName, String attributeName, Color color) {
-    return colorMapper(id, color) ?? color;
+    if (id == null) return color;
+
+    final highlighted = highlightedColors[id];
+    if (highlighted != null) return highlighted;
+
+    if (hoveredId != null && id == hoveredId) {
+      return onHoverColor?.call(color) ?? defaultHoverColor;
+    }
+
+    return color;
   }
 }

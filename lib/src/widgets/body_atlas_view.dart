@@ -122,23 +122,23 @@ class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasVie
           builder: (context, snapshot) {
             final tester = snapshot.data;
 
+            final highlightedColors = <String, Color>{};
+            final colorMapping = widget.colorMapping;
+            if (colorMapping != null) {
+              for (final entry in colorMapping.entries) {
+                final color = entry.value;
+                if (color != null) {
+                  highlightedColors[entry.key.id] = color;
+                }
+              }
+            }
+
             final svg = SvgAsset(
               path: widget.view.path,
-              colorMapper: (id, color) {
-                final hoverColor = widget.hoverColor?.call(color) ?? colorScheme.secondary;
-                if (id == null) return null;
-
-                final info = widget.resolver.tryById(id);
-                if (info == null) return null;
-
-                final highlighted = widget.colorMapping?[info];
-                if (highlighted != null) return highlighted;
-
-                final hovered = widget.hoveredOver;
-                if (hovered != null && identical(info, hovered)) return hoverColor;
-
-                return null;
-              },
+              highlightedColors: highlightedColors,
+              hoveredId: widget.hoveredOver?.id,
+              defaultHoverColor: colorScheme.secondary,
+              onHoverColor: widget.hoverColor,
             );
 
             Widget interactiveChild = GestureDetector(
