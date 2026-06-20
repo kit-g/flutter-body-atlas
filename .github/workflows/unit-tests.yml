@@ -58,5 +58,5 @@ jobs:
         run: flutter analyze
 
       - name: "Pub publish dry-run, package (only once)"
-        if: ${{ matrix.flutter == '3.41.x' }}
+        if: ${{ matrix.flutter == '3.44.x' }}
         run: dart pub publish --dry-run
