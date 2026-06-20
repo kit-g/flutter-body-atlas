@@ -19,6 +19,7 @@ jobs:
         flutter:
           - "3.38.x"
           - "3.41.x"
+          - "3.44.x"
 
     steps:
       - name: Checkout
