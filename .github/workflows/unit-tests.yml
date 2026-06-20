@@ -40,6 +40,7 @@ jobs:
         run: flutter pub get
 
       - name: "Format check, package"
+        if: ${{ matrix.flutter == '3.44.x' }}
         run: dart format --output=none --set-exit-if-changed .
 
       - name: "Analyze, package"
