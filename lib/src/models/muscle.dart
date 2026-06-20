@@ -138,8 +138,7 @@ enum Muscle implements AtlasElement {
   adductorLongusLeft('adductor_longus_l'),
   adductorLongusRight('adductor_longus_r'),
   pectineusLeft('pectineus_l'),
-  pectineusRight('pectineus_r')
-  ;
+  pectineusRight('pectineus_r');
 
   const Muscle(this.id);
 
@@ -170,8 +169,7 @@ enum MuscleGroup implements AtlasGroup {
   back('back'),
   core('core'),
   shoulders('shoulders'),
-  chest('chest')
-  ;
+  chest('chest');
 
   const MuscleGroup(this.id);
 
@@ -197,8 +195,7 @@ enum MuscleGroup implements AtlasGroup {
 enum BodySide {
   left('left'),
   right('right'),
-  none('none')
-  ;
+  none('none');
 
   const BodySide(this.id);
 
