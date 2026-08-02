@@ -20,10 +20,32 @@ extension on String {
   }
 }
 
-typedef _IdPath = ({String id, Path path});
+final class _AtlasPath {
+  const _AtlasPath({
+    required this.id,
+    required this.path,
+    required this.fill,
+    required this.stroke,
+    required this.strokeWidth,
+    required this.strokeCap,
+    required this.strokeJoin,
+  });
 
-final class _AtlasHitTester {
-  const _AtlasHitTester({
+  /// Null when the SVG path has no `id` (still painted, not hit-testable).
+  final String? id;
+  final Path path;
+  final Color? fill;
+  final Color? stroke;
+  final double strokeWidth;
+  final StrokeCap strokeCap;
+  final StrokeJoin strokeJoin;
+
+  bool get hasFill => fill != null;
+  bool get hasStroke => stroke != null && strokeWidth > 0;
+}
+
+final class _AtlasGeometry {
+  const _AtlasGeometry({
     required this.viewBox,
     required this.pathsInPaintOrder,
   });
@@ -32,18 +54,34 @@ final class _AtlasHitTester {
 
   /// Paths in paint order (first painted → last painted).
   /// For hit testing we usually iterate in reverse (top-most first).
-  final List<_IdPath> pathsInPaintOrder;
+  final List<_AtlasPath> pathsInPaintOrder;
 
-  static _IdPath? fromXmlElement(XmlElement element) {
-    final id = element.getAttribute('id');
+  static _AtlasPath? fromXmlElement(XmlElement element) {
     final d = element.getAttribute('d');
-    if (id == null || id.isEmpty) return null;
     if (d == null || d.isEmpty) return null;
+
+    final fill = _parseSvgColor(element.getAttribute('fill'));
+    final stroke = _parseSvgColor(element.getAttribute('stroke'));
+    if (fill == null && stroke == null) return null;
+
     final path = parseSvgPathData(d);
-    return (id: id, path: path);
+    if (element.getAttribute('fill-rule') == 'evenodd') {
+      path.fillType = PathFillType.evenOdd;
+    }
+
+    final id = element.getAttribute('id');
+    return _AtlasPath(
+      id: (id == null || id.isEmpty) ? null : id,
+      path: path,
+      fill: fill,
+      stroke: stroke,
+      strokeWidth: double.tryParse(element.getAttribute('stroke-width') ?? '') ?? 1.0,
+      strokeCap: _parseStrokeCap(element.getAttribute('stroke-linecap')),
+      strokeJoin: _parseStrokeJoin(element.getAttribute('stroke-linejoin')),
+    );
   }
 
-  static Future<_AtlasHitTester> load(AtlasAsset asset) async {
+  static Future<_AtlasGeometry> load(AtlasAsset asset) async {
     final svgText = await asset.loadSvg();
     final doc = XmlDocument.parse(svgText);
 
@@ -53,7 +91,7 @@ final class _AtlasHitTester {
 
     final paths = doc.findAllElements('path').map(fromXmlElement).nonNulls.toList();
 
-    return _AtlasHitTester(viewBox: viewBox, pathsInPaintOrder: paths);
+    return _AtlasGeometry(viewBox: viewBox, pathsInPaintOrder: paths);
   }
 
   /// Returns the SVG element id that contains the tap point, or null.
@@ -66,14 +104,196 @@ final class _AtlasHitTester {
     // Top-most path should win: check in reverse paint order.
     for (var i = pathsInPaintOrder.length - 1; i >= 0; i--) {
       final item = pathsInPaintOrder[i];
-      if (item.path.contains(p)) return item.id;
+      final id = item.id;
+      // Stroke-only decorative paths are not interactive targets.
+      if (id == null || !item.hasFill) continue;
+      if (item.path.contains(p)) return id;
     }
     return null;
+  }
+
+  /// Forward transform: viewBox → widget local (BoxFit.contain, centered).
+  Matrix4 forwardTransform(Size size) {
+    final vb = Size(viewBox.width, viewBox.height);
+
+    final sx = vb.width == 0 ? 1.0 : size.width / vb.width;
+    final sy = vb.height == 0 ? 1.0 : size.height / vb.height;
+    final scale = math.min(sx, sy);
+
+    final drawn = Size(vb.width * scale, vb.height * scale);
+    final dx = (size.width - drawn.width) / 2.0;
+    final dy = (size.height - drawn.height) / 2.0;
+
+    return Matrix4.identity()
+      ..translateByDouble(dx, dy, 0.0, 1.0)
+      ..scaleByDouble(scale, scale, 1.0, 1.0)
+      ..translateByDouble(-viewBox.left, -viewBox.top, 0.0, 1.0);
+  }
+}
+
+/// Parses simple SVG color values used by the atlas assets.
+Color? _parseSvgColor(String? raw) {
+  if (raw == null) return null;
+  final value = raw.trim().toLowerCase();
+  if (value.isEmpty || value == 'none') return null;
+
+  switch (value) {
+    case 'black':
+      return const Color(0xFF000000);
+    case 'white':
+      return const Color(0xFFFFFFFF);
+  }
+
+  if (!value.startsWith('#')) return null;
+
+  final hex = value.substring(1);
+  if (hex.length == 3) {
+    final r = int.tryParse('${hex[0]}${hex[0]}', radix: 16);
+    final g = int.tryParse('${hex[1]}${hex[1]}', radix: 16);
+    final b = int.tryParse('${hex[2]}${hex[2]}', radix: 16);
+    if (r == null || g == null || b == null) return null;
+    return Color.fromARGB(255, r, g, b);
+  }
+  if (hex.length == 6) {
+    final rgb = int.tryParse(hex, radix: 16);
+    if (rgb == null) return null;
+    return Color(0xFF000000 | rgb);
+  }
+  if (hex.length == 8) {
+    final argb = int.tryParse(hex, radix: 16);
+    if (argb == null) return null;
+    return Color(argb);
+  }
+  return null;
+}
+
+StrokeCap _parseStrokeCap(String? raw) {
+  return switch (raw) {
+    'round' => StrokeCap.round,
+    'square' => StrokeCap.square,
+    _ => StrokeCap.butt,
+  };
+}
+
+StrokeJoin _parseStrokeJoin(String? raw) {
+  return switch (raw) {
+    'round' => StrokeJoin.round,
+    'bevel' => StrokeJoin.bevel,
+    _ => StrokeJoin.miter,
+  };
+}
+
+final class _AtlasPainter extends CustomPainter {
+  const _AtlasPainter({
+    required this.geometry,
+    required this.highlightedColors,
+    required this.hoveredId,
+    required this.defaultHoverColor,
+    required this.onHoverColor,
+  });
+
+  final _AtlasGeometry geometry;
+  final Map<String, Color> highlightedColors;
+  final String? hoveredId;
+  final Color defaultHoverColor;
+  final Color? Function(Color)? onHoverColor;
+
+  /// Target on-screen thickness for muscle seams (logical pixels).
+  static const double _separatorScreenPx = 1.4;
+  static const Color _separatorColor = Color(0xFF757575);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final transform = geometry.forwardTransform(size);
+    // Stroke widths are in viewBox units and get scaled by the canvas
+    // transform. Convert a desired on-screen px width back to viewBox units
+    // so separators stay visible after BoxFit.contain.
+    final scale = transform.getMaxScaleOnAxis().clamp(0.0001, double.infinity);
+    final separatorWidth = _separatorScreenPx / scale;
+    // Keep SVG decorative strokes readable too (many are 0.25 in viewBox).
+    final minStrokeWidth = 1.0 / scale;
+
+    canvas.save();
+    canvas.transform(transform.storage);
+
+    final fillPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
+    final strokePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..isAntiAlias = true;
+    final separatorPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..isAntiAlias = true
+      ..strokeWidth = separatorWidth
+      ..strokeJoin = StrokeJoin.round
+      ..color = _separatorColor;
+
+    // Pass 1: fills only. Drawing separators in the same loop lets later
+    // neighboring fills cover earlier seams (same #BDBDBD muscles → blob).
+    for (final item in geometry.pathsInPaintOrder) {
+      if (!item.hasFill) continue;
+      fillPaint.color = _colorFor(item);
+      canvas.drawPath(item.path, fillPaint);
+    }
+
+    // Pass 2: muscle seams on top of every filled interactive path.
+    for (final item in geometry.pathsInPaintOrder) {
+      if (!item.hasFill || item.id == null) continue;
+      // Skip the body underlayer; seams are for individual muscles.
+      if (item.id == 'underlayer') continue;
+      canvas.drawPath(item.path, separatorPaint);
+    }
+
+    // Pass 3: explicit SVG stroke paths (and stroked fills) on top.
+    for (final item in geometry.pathsInPaintOrder) {
+      if (!item.hasStroke) continue;
+      strokePaint
+        ..color = item.stroke!
+        ..strokeWidth = math.max(item.strokeWidth, minStrokeWidth)
+        ..strokeCap = item.strokeCap
+        ..strokeJoin = item.strokeJoin;
+      canvas.drawPath(item.path, strokePaint);
+    }
+
+    canvas.restore();
+  }
+
+  Color _colorFor(_AtlasPath item) {
+    final base = item.fill ?? const Color(0xFFBDBDBD);
+    final id = item.id;
+    if (id != null) {
+      final highlighted = highlightedColors[id];
+      if (highlighted != null) return highlighted;
+
+      if (hoveredId != null && id == hoveredId) {
+        return onHoverColor?.call(base) ?? defaultHoverColor;
+      }
+    }
+    return base;
+  }
+
+  @override
+  bool shouldRepaint(covariant _AtlasPainter oldDelegate) {
+    return oldDelegate.geometry != geometry ||
+        oldDelegate.hoveredId != hoveredId ||
+        oldDelegate.defaultHoverColor != defaultHoverColor ||
+        oldDelegate.onHoverColor != onHoverColor ||
+        !_mapEquals(oldDelegate.highlightedColors, highlightedColors);
+  }
+
+  static bool _mapEquals(Map<String, Color> a, Map<String, Color> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (final entry in a.entries) {
+      if (b[entry.key] != entry.value) return false;
+    }
+    return true;
   }
 }
 
 extension on Rect {
-  /// Matches `SvgPicture`’s default behavior closely enough:
+  /// Matches previous `SvgPicture` behavior closely enough:
   /// `fit: BoxFit.contain`, centered.
   ///
   /// Returns a matrix that converts widget-local coordinates -> viewBox coordinates.
