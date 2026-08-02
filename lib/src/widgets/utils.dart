@@ -198,15 +198,23 @@ final class _AtlasPainter extends CustomPainter {
   final Color defaultHoverColor;
   final Color? Function(Color)? onHoverColor;
 
-  /// Hairline separators so adjacent same-fill muscles stay readable.
-  /// Matches the visual “seams” users get from `SvgPicture` anti-aliasing.
-  static const double _separatorStrokeWidth = 0.35;
-  static const Color _separatorColor = Color(0x669E9E9E);
+  /// Target on-screen thickness for muscle seams (logical pixels).
+  static const double _separatorScreenPx = 1.4;
+  static const Color _separatorColor = Color(0xFF757575);
 
   @override
   void paint(Canvas canvas, Size size) {
+    final transform = geometry.forwardTransform(size);
+    // Stroke widths are in viewBox units and get scaled by the canvas
+    // transform. Convert a desired on-screen px width back to viewBox units
+    // so separators stay visible after BoxFit.contain.
+    final scale = transform.getMaxScaleOnAxis().clamp(0.0001, double.infinity);
+    final separatorWidth = _separatorScreenPx / scale;
+    // Keep SVG decorative strokes readable too (many are 0.25 in viewBox).
+    final minStrokeWidth = 1.0 / scale;
+
     canvas.save();
-    canvas.transform(geometry.forwardTransform(size).storage);
+    canvas.transform(transform.storage);
 
     final fillPaint = Paint()
       ..style = PaintingStyle.fill
@@ -217,28 +225,35 @@ final class _AtlasPainter extends CustomPainter {
     final separatorPaint = Paint()
       ..style = PaintingStyle.stroke
       ..isAntiAlias = true
-      ..strokeWidth = _separatorStrokeWidth
+      ..strokeWidth = separatorWidth
+      ..strokeJoin = StrokeJoin.round
       ..color = _separatorColor;
 
+    // Pass 1: fills only. Drawing separators in the same loop lets later
+    // neighboring fills cover earlier seams (same #BDBDBD muscles → blob).
     for (final item in geometry.pathsInPaintOrder) {
-      if (item.hasFill) {
-        fillPaint.color = _colorFor(item);
-        canvas.drawPath(item.path, fillPaint);
+      if (!item.hasFill) continue;
+      fillPaint.color = _colorFor(item);
+      canvas.drawPath(item.path, fillPaint);
+    }
 
-        // Keep muscle boundaries visible when neighboring fills match.
-        if (item.id != null) {
-          canvas.drawPath(item.path, separatorPaint);
-        }
-      }
+    // Pass 2: muscle seams on top of every filled interactive path.
+    for (final item in geometry.pathsInPaintOrder) {
+      if (!item.hasFill || item.id == null) continue;
+      // Skip the body underlayer; seams are for individual muscles.
+      if (item.id == 'underlayer') continue;
+      canvas.drawPath(item.path, separatorPaint);
+    }
 
-      if (item.hasStroke) {
-        strokePaint
-          ..color = item.stroke!
-          ..strokeWidth = item.strokeWidth
-          ..strokeCap = item.strokeCap
-          ..strokeJoin = item.strokeJoin;
-        canvas.drawPath(item.path, strokePaint);
-      }
+    // Pass 3: explicit SVG stroke paths (and stroked fills) on top.
+    for (final item in geometry.pathsInPaintOrder) {
+      if (!item.hasStroke) continue;
+      strokePaint
+        ..color = item.stroke!
+        ..strokeWidth = math.max(item.strokeWidth, minStrokeWidth)
+        ..strokeCap = item.strokeCap
+        ..strokeJoin = item.strokeJoin;
+      canvas.drawPath(item.path, strokePaint);
     }
 
     canvas.restore();
