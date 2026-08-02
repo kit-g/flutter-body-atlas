@@ -8,6 +8,11 @@ part of 'widgets.dart';
 /// custom coloring for selected or highlighted elements and optional hover
 /// effects on desktop/web platforms.
 ///
+/// Rendering uses [CustomPaint] with the same parsed SVG paths used for
+/// hit-testing. This avoids `flutter_svg`'s `SvgLoader`/`ColorMapper` +
+/// `compute` isolate path, which can fail in mobile release builds while
+/// hit-testing still works.
+///
 /// Type parameter [I] represents the specific type of anatomical element info
 /// (e.g., [MuscleInfo], [OrganInfo]) that extends [AtlasElementInfo].
 ///
@@ -92,20 +97,20 @@ class BodyAtlasView<I extends AtlasElementInfo> extends StatefulWidget {
 
 class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasView<I>> {
   final _interactionKey = GlobalKey();
-  late Future<_AtlasHitTester> _hitTester;
+  late Future<_AtlasGeometry> _geometry;
   String? _hoveredId;
 
   @override
   void initState() {
     super.initState();
-    _hitTester = _AtlasHitTester.load(widget.view);
+    _geometry = _AtlasGeometry.load(widget.view);
   }
 
   @override
   void didUpdateWidget(covariant BodyAtlasView<I> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.view != widget.view) {
-      _hitTester = _AtlasHitTester.load(widget.view);
+      _geometry = _AtlasGeometry.load(widget.view);
       _hoveredId = null;
     }
   }
@@ -117,10 +122,10 @@ class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasVie
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return FutureBuilder<_AtlasHitTester>(
-          future: _hitTester,
+        return FutureBuilder<_AtlasGeometry>(
+          future: _geometry,
           builder: (context, snapshot) {
-            final tester = snapshot.data;
+            final geometry = snapshot.data;
 
             final highlightedColors = <String, Color>{};
             final colorMapping = widget.colorMapping;
@@ -133,23 +138,28 @@ class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasVie
               }
             }
 
-            final svg = SvgAsset(
-              path: widget.view.path,
-              highlightedColors: highlightedColors,
-              hoveredId: widget.hoveredOver?.id,
-              defaultHoverColor: colorScheme.secondary,
-              onHoverColor: widget.hoverColor,
-            );
+            final atlas = geometry == null
+                ? const SizedBox.expand()
+                : CustomPaint(
+                    painter: _AtlasPainter(
+                      geometry: geometry,
+                      highlightedColors: highlightedColors,
+                      hoveredId: widget.hoveredOver?.id,
+                      defaultHoverColor: colorScheme.secondary,
+                      onHoverColor: widget.hoverColor,
+                    ),
+                    child: const SizedBox.expand(),
+                  );
 
             Widget interactiveChild = GestureDetector(
               behavior: .opaque,
-              onTapDown: switch ((widget.onTapElement, tester)) {
-                (ValueChanged<I> onTap, _AtlasHitTester tester) => (details) {
+              onTapDown: switch ((widget.onTapElement, geometry)) {
+                (ValueChanged<I> onTap, _AtlasGeometry geometry) => (details) {
                   final box = _interactionKey.box;
                   if (box == null || !box.hasSize) return;
 
                   final local = box.globalToLocal(details.globalPosition);
-                  final id = tester.hitTest(local, box.size);
+                  final id = geometry.hitTest(local, box.size);
                   if (id == null) return;
 
                   final info = widget.resolver.tryById(id);
@@ -159,10 +169,10 @@ class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasVie
                 },
                 _ => null,
               },
-              child: svg,
+              child: atlas,
             );
 
-            if (isDesktop && tester != null && widget.onHoverOverElement != null) {
+            if (isDesktop && geometry != null && widget.onHoverOverElement != null) {
               interactiveChild = MouseRegion(
                 hitTestBehavior: HitTestBehavior.opaque,
                 cursor: SystemMouseCursors.click,
@@ -172,7 +182,7 @@ class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasVie
                   if (box == null || !box.hasSize) return;
 
                   final local = box.globalToLocal(event.position);
-                  final id = tester.hitTest(local, box.size);
+                  final id = geometry.hitTest(local, box.size);
                   _emit(id);
                 },
                 child: interactiveChild,

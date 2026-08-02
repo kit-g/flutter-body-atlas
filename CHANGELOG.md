@@ -1,3 +1,12 @@
+## 0.1.5
+
+* Fix blank atlas rendering in iOS/Android **release** builds.
+  `BodyAtlasView` no longer uses `flutter_svg` `SvgPicture`/`ColorMapper`
+  (which runs `SvgLoader` via `compute` and can fail when `hoverColor` or
+  other closures are involved). The atlas is now painted with `CustomPaint`
+  from the same parsed SVG paths used for hit-testing.
+* Remove unused `flutter_svg` dependency.
+
 ## 0.1.4
 
 * Issue with rendering in mobile release mode fixed.
