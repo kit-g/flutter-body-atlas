@@ -25,12 +25,23 @@ final class _AtlasPath {
     required this.id,
     required this.path,
     required this.fill,
+    required this.stroke,
+    required this.strokeWidth,
+    required this.strokeCap,
+    required this.strokeJoin,
   });
 
   /// Null when the SVG path has no `id` (still painted, not hit-testable).
   final String? id;
   final Path path;
-  final Color fill;
+  final Color? fill;
+  final Color? stroke;
+  final double strokeWidth;
+  final StrokeCap strokeCap;
+  final StrokeJoin strokeJoin;
+
+  bool get hasFill => fill != null;
+  bool get hasStroke => stroke != null && strokeWidth > 0;
 }
 
 final class _AtlasGeometry {
@@ -50,13 +61,23 @@ final class _AtlasGeometry {
     if (d == null || d.isEmpty) return null;
 
     final fill = _parseSvgColor(element.getAttribute('fill'));
-    if (fill == null) return null;
+    final stroke = _parseSvgColor(element.getAttribute('stroke'));
+    if (fill == null && stroke == null) return null;
+
+    final path = parseSvgPathData(d);
+    if (element.getAttribute('fill-rule') == 'evenodd') {
+      path.fillType = PathFillType.evenOdd;
+    }
 
     final id = element.getAttribute('id');
     return _AtlasPath(
       id: (id == null || id.isEmpty) ? null : id,
-      path: parseSvgPathData(d),
+      path: path,
       fill: fill,
+      stroke: stroke,
+      strokeWidth: double.tryParse(element.getAttribute('stroke-width') ?? '') ?? 1.0,
+      strokeCap: _parseStrokeCap(element.getAttribute('stroke-linecap')),
+      strokeJoin: _parseStrokeJoin(element.getAttribute('stroke-linejoin')),
     );
   }
 
@@ -84,7 +105,8 @@ final class _AtlasGeometry {
     for (var i = pathsInPaintOrder.length - 1; i >= 0; i--) {
       final item = pathsInPaintOrder[i];
       final id = item.id;
-      if (id == null) continue;
+      // Stroke-only decorative paths are not interactive targets.
+      if (id == null || !item.hasFill) continue;
       if (item.path.contains(p)) return id;
     }
     return null;
@@ -109,11 +131,19 @@ final class _AtlasGeometry {
   }
 }
 
-/// Parses simple SVG color values used by the atlas assets (`#RGB` / `#RRGGBB`).
+/// Parses simple SVG color values used by the atlas assets.
 Color? _parseSvgColor(String? raw) {
   if (raw == null) return null;
-  final value = raw.trim();
+  final value = raw.trim().toLowerCase();
   if (value.isEmpty || value == 'none') return null;
+
+  switch (value) {
+    case 'black':
+      return const Color(0xFF000000);
+    case 'white':
+      return const Color(0xFFFFFFFF);
+  }
+
   if (!value.startsWith('#')) return null;
 
   final hex = value.substring(1);
@@ -137,6 +167,22 @@ Color? _parseSvgColor(String? raw) {
   return null;
 }
 
+StrokeCap _parseStrokeCap(String? raw) {
+  return switch (raw) {
+    'round' => StrokeCap.round,
+    'square' => StrokeCap.square,
+    _ => StrokeCap.butt,
+  };
+}
+
+StrokeJoin _parseStrokeJoin(String? raw) {
+  return switch (raw) {
+    'round' => StrokeJoin.round,
+    'bevel' => StrokeJoin.bevel,
+    _ => StrokeJoin.miter,
+  };
+}
+
 final class _AtlasPainter extends CustomPainter {
   const _AtlasPainter({
     required this.geometry,
@@ -152,34 +198,64 @@ final class _AtlasPainter extends CustomPainter {
   final Color defaultHoverColor;
   final Color? Function(Color)? onHoverColor;
 
+  /// Hairline separators so adjacent same-fill muscles stay readable.
+  /// Matches the visual “seams” users get from `SvgPicture` anti-aliasing.
+  static const double _separatorStrokeWidth = 0.35;
+  static const Color _separatorColor = Color(0x669E9E9E);
+
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
     canvas.transform(geometry.forwardTransform(size).storage);
 
-    final paint = Paint()
+    final fillPaint = Paint()
       ..style = PaintingStyle.fill
       ..isAntiAlias = true;
+    final strokePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..isAntiAlias = true;
+    final separatorPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..isAntiAlias = true
+      ..strokeWidth = _separatorStrokeWidth
+      ..color = _separatorColor;
 
     for (final item in geometry.pathsInPaintOrder) {
-      paint.color = _colorFor(item);
-      canvas.drawPath(item.path, paint);
+      if (item.hasFill) {
+        fillPaint.color = _colorFor(item);
+        canvas.drawPath(item.path, fillPaint);
+
+        // Keep muscle boundaries visible when neighboring fills match.
+        if (item.id != null) {
+          canvas.drawPath(item.path, separatorPaint);
+        }
+      }
+
+      if (item.hasStroke) {
+        strokePaint
+          ..color = item.stroke!
+          ..strokeWidth = item.strokeWidth
+          ..strokeCap = item.strokeCap
+          ..strokeJoin = item.strokeJoin;
+        canvas.drawPath(item.path, strokePaint);
+      }
     }
 
     canvas.restore();
   }
 
   Color _colorFor(_AtlasPath item) {
+    final base = item.fill ?? const Color(0xFFBDBDBD);
     final id = item.id;
     if (id != null) {
       final highlighted = highlightedColors[id];
       if (highlighted != null) return highlighted;
 
       if (hoveredId != null && id == hoveredId) {
-        return onHoverColor?.call(item.fill) ?? defaultHoverColor;
+        return onHoverColor?.call(base) ?? defaultHoverColor;
       }
     }
-    return item.fill;
+    return base;
   }
 
   @override

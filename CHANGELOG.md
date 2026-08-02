@@ -5,6 +5,8 @@
   (which runs `SvgLoader` via `compute` and can fail when `hoverColor` or
   other closures are involved). The atlas is now painted with `CustomPaint`
   from the same parsed SVG paths used for hit-testing.
+* Preserve SVG detail: `fill-rule="evenodd"`, stroke-only outline paths, and
+  light separators so adjacent same-fill muscles stay visually distinct.
 * Remove unused `flutter_svg` dependency.
 
 ## 0.1.4
