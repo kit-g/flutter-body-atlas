@@ -1,5 +1,9 @@
+import 'dart:io';
+
+import 'package:flutter_body_atlas/src/assets.dart';
 import 'package:flutter_body_atlas/src/models/muscle.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:xml/xml.dart';
 
 void main() {
   group('Muscle enum integrity', () {
@@ -144,6 +148,55 @@ void main() {
     test('Search limit is respected', () {
       final results = MuscleCatalog.search('e', limit: 3); // broad query
       expect(results.length, lessThanOrEqualTo(3));
+    });
+  });
+
+  group('Muscle parts', () {
+    test('Ordinary muscles are their own single path', () {
+      for (final m in Muscle.values) {
+        if (m == Muscle.externalObliqueLeft || m == Muscle.externalObliqueRight) continue;
+        expect(m.parts, <String>[m.id], reason: '${m.id} should paint itself and nothing else');
+      }
+    });
+
+    test('External oblique aggregates fan out to their digitations', () {
+      expect(Muscle.externalObliqueLeft.parts, hasLength(8));
+      expect(Muscle.externalObliqueRight.parts, hasLength(8));
+
+      for (final m in <Muscle>[Muscle.externalObliqueLeft, Muscle.externalObliqueRight]) {
+        expect(m.parts, isNot(contains(m.id)), reason: 'no path carries the aggregate id ${m.id}');
+
+        for (final part in m.parts) {
+          expect(
+            Muscle.tryFromString(part),
+            isNotNull,
+            reason: '${m.id} fans out to $part, which is not a Muscle',
+          );
+        }
+      }
+    });
+
+    test('Every part is drawn by at least one layer', () async {
+      final drawn = <String>{};
+      for (final asset in AtlasAsset.values) {
+        final svg = XmlDocument.parse(File(asset.path).readAsStringSync());
+        drawn.addAll(svg.findAllElements('path').map((e) => e.getAttribute('id')).nonNulls);
+      }
+
+      final orphans = <String>[];
+      for (final m in Muscle.values) {
+        for (final part in m.parts) {
+          if (!drawn.contains(part)) orphans.add('${m.id} -> $part');
+        }
+      }
+
+      expect(
+        orphans,
+        isEmpty,
+        reason:
+            'Muscles whose parts have no path in either SVG (they highlight nothing): '
+            '${orphans.join(', ')}',
+      );
     });
   });
 
