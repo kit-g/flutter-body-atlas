@@ -1,3 +1,7 @@
+## 0.2.1
+
+* Dependency updates.
+
 ## 0.2.0
 
 * `external_oblique_l` / `external_oblique_r` highlight again. The artwork draws the external oblique as eight
