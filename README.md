@@ -70,6 +70,24 @@ application-level logic without fear of them changing.
 For a full list of available IDs and their corresponding anatomical names, refer to the `Muscle` enum or the
 `MuscleCatalog`.
 
+### Aggregate IDs
+
+A few muscles are drawn as several paths rather than one — the external oblique, for example, is a fan of eight
+digitations per side. Those pieces keep their own IDs (`external_oblique_3_l`), and an **aggregate** ID names the muscle
+as a whole (`external_oblique_l`). Highlight an aggregate and every piece it covers is painted:
+
+```dart
+colorMapping: {
+  // paints all eight left-side digitations
+  MuscleCatalog.byIdOrThrow('external_oblique_l'): Colors.orange,
+  // paints just the third one
+  MuscleCatalog.byIdOrThrow('external_oblique_3_l'): Colors.orange,
+}
+```
+
+`AtlasElement.parts` is what the renderer reads: `[id]` for an ordinary element, the piece IDs for an aggregate. No SVG
+path carries an aggregate ID, so hit testing still reports the specific piece the user touched.
+
 ## API Overview
 
 The following types are the primary entry points for the package:
