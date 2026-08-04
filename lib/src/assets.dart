@@ -23,7 +23,10 @@ enum AtlasAsset {
 class SvgAsset extends StatelessWidget {
   final String path;
   final Map<String, Color> highlightedColors;
-  final String? hoveredId;
+
+  /// Every path id the hovered element covers — more than one when that element
+  /// is an aggregate.
+  final Set<String> hoveredIds;
   final Color defaultHoverColor;
   final Color? Function(Color)? onHoverColor;
 
@@ -31,7 +34,7 @@ class SvgAsset extends StatelessWidget {
     super.key,
     required this.path,
     required this.highlightedColors,
-    this.hoveredId,
+    this.hoveredIds = const <String>{},
     required this.defaultHoverColor,
     this.onHoverColor,
   });
@@ -45,7 +48,7 @@ class SvgAsset extends StatelessWidget {
       package: AtlasAsset.package,
       colorMapper: _AtlasColorMapper(
         highlightedColors: highlightedColors,
-        hoveredId: hoveredId,
+        hoveredIds: hoveredIds,
         defaultHoverColor: defaultHoverColor,
         onHoverColor: onHoverColor,
       ),
@@ -55,13 +58,13 @@ class SvgAsset extends StatelessWidget {
 
 class _AtlasColorMapper extends ColorMapper {
   final Map<String, Color> highlightedColors;
-  final String? hoveredId;
+  final Set<String> hoveredIds;
   final Color defaultHoverColor;
   final Color? Function(Color)? onHoverColor;
 
   const _AtlasColorMapper({
     required this.highlightedColors,
-    this.hoveredId,
+    this.hoveredIds = const <String>{},
     required this.defaultHoverColor,
     this.onHoverColor,
   });
@@ -73,7 +76,7 @@ class _AtlasColorMapper extends ColorMapper {
     final highlighted = highlightedColors[id];
     if (highlighted != null) return highlighted;
 
-    if (hoveredId != null && id == hoveredId) {
+    if (hoveredIds.contains(id)) {
       return onHoverColor?.call(color) ?? defaultHoverColor;
     }
 

@@ -128,7 +128,10 @@ class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasVie
               for (final entry in colorMapping.entries) {
                 final color = entry.value;
                 if (color != null) {
-                  highlightedColors[entry.key.id] = color;
+                  // an aggregate covers several paths, an ordinary element just one
+                  for (final part in entry.key.element.parts) {
+                    highlightedColors[part] = color;
+                  }
                 }
               }
             }
@@ -136,7 +139,7 @@ class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasVie
             final svg = SvgAsset(
               path: widget.view.path,
               highlightedColors: highlightedColors,
-              hoveredId: widget.hoveredOver?.id,
+              hoveredIds: widget.hoveredOver?.element.parts.toSet() ?? const <String>{},
               defaultHoverColor: colorScheme.secondary,
               onHoverColor: widget.hoverColor,
             );
