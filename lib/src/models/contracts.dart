@@ -1,7 +1,19 @@
 /// A single interactive element of the SVG image.
 abstract interface class AtlasElement {
   /// Stable element id that matches an SVG `<path id="...">`.
+  ///
+  /// Aggregate elements are the exception: they name an anatomical whole that
+  /// the artwork only draws in pieces, so no path carries their id. See [parts].
   String get id;
+
+  /// SVG path ids this element paints, in no particular order.
+  ///
+  /// For an ordinary element this is just `[id]`. An aggregate names an
+  /// anatomical whole the artwork draws as several paths — the external oblique,
+  /// for instance, is a fan of digitations rather than one shape — and fans out
+  /// to the ids of those paths instead. Highlighting reads this, not [id], so
+  /// tagging an aggregate paints every piece it covers.
+  Iterable<String> get parts;
 }
 
 /// Optional grouping of [AtlasElement],

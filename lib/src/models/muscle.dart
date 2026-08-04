@@ -1,5 +1,32 @@
 import 'contracts.dart';
 
+/// The artwork draws the external oblique as eight digitations per side rather
+/// than one shape, so [Muscle.externalObliqueLeft] / [Muscle.externalObliqueRight]
+/// are aggregates over those paths. The back layer only carries the first
+/// digitation; ids missing from a layer simply never match there.
+const _externalObliqueLeft = <String>[
+  'external_oblique_1_l',
+  'external_oblique_2_l',
+  'external_oblique_3_l',
+  'external_oblique_4_l',
+  'external_oblique_5_l',
+  'external_oblique_6_l',
+  'external_oblique_7_l',
+  'external_oblique_8_l',
+];
+
+/// Right-side counterpart of [_externalObliqueLeft].
+const _externalObliqueRight = <String>[
+  'external_oblique_1_r',
+  'external_oblique_2_r',
+  'external_oblique_3_r',
+  'external_oblique_4_r',
+  'external_oblique_5_r',
+  'external_oblique_6_r',
+  'external_oblique_7_r',
+  'external_oblique_8_r',
+];
+
 enum Muscle implements AtlasElement {
   // legs / hamstrings
   semimembranosus2Right('semimembranosus_2_r'),
@@ -42,8 +69,8 @@ enum Muscle implements AtlasElement {
   gluteusMaximusLeft('gluteus_maximus_l'),
 
   // trunk
-  externalObliqueRight('external_oblique_r'),
-  externalObliqueLeft('external_oblique_l'),
+  externalObliqueRight('external_oblique_r', parts: _externalObliqueRight),
+  externalObliqueLeft('external_oblique_l', parts: _externalObliqueLeft),
   externalOblique1Left('external_oblique_1_l'),
   externalOblique1Right('external_oblique_1_r'),
   externalOblique2Left('external_oblique_2_l'),
@@ -140,10 +167,19 @@ enum Muscle implements AtlasElement {
   pectineusLeft('pectineus_l'),
   pectineusRight('pectineus_r');
 
-  const Muscle(this.id);
+  const Muscle(this.id, {List<String> parts = const <String>[]}) : _parts = parts;
 
   @override
   final String id;
+
+  final List<String> _parts;
+
+  /// See [AtlasElement.parts].
+  ///
+  /// Empty in the constructor means "I am my own path", which is every muscle
+  /// but the two external oblique aggregates.
+  @override
+  Iterable<String> get parts => _parts.isEmpty ? <String>[id] : _parts;
 
   static final Map<String, Muscle> _byId = {for (final m in values) m.id: m};
 
@@ -503,11 +539,12 @@ abstract final class MuscleCatalog {
   ];
 
   static const core = <MuscleInfo>[
+    // aggregates over the numbered digitations below: tag these to paint the
+    // whole muscle, the numbered ones to paint a single slip.
     MuscleInfo(
       muscle: .externalObliqueRight,
       displayName: 'External Oblique — Right',
       group: .core,
-      // POC:  as back-ish “trunk”; adjust later if you add a Trunk group.
       side: BodySide.right,
       aliases: <String>['oblique', 'abs'],
     ),
@@ -515,7 +552,6 @@ abstract final class MuscleCatalog {
       muscle: .externalObliqueLeft,
       displayName: 'External Oblique — Left',
       group: .core,
-      // see  above
       side: BodySide.left,
       aliases: <String>['oblique', 'abs'],
     ),
