@@ -1,8 +1,13 @@
-## 0.2.1
+## 0.2.2
 
 * Muscle data and the `Atlas*` contracts moved to [body_atlas](https://pub.dev/packages/body_atlas), a pure Dart
   package, so servers and CLIs can share the same ids without Flutter. Everything is re-exported from here: no import
   changes needed.
+* `xml` accepts 6.x again alongside 7.x: 7.x needs Dart 3.11, so 0.2.1 couldn't resolve on Flutter 3.38.
+
+## 0.2.1
+
+* Dependency updates.
 
 ## 0.2.0
 
