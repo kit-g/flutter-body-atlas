@@ -20,6 +20,7 @@ jobs:
           - "3.38.x"
           - "3.41.x"
           - "3.44.x"
+          - "3.47.x"
 
     steps:
       - name: Checkout
@@ -40,7 +41,7 @@ jobs:
         run: flutter pub get
 
       - name: "Format check, package"
-        if: ${{ matrix.flutter == '3.44.x' }}
+        if: ${{ matrix.flutter == '3.47.x' }}
         run: dart format --output=none --set-exit-if-changed .
 
       - name: "Analyze, package"
@@ -66,10 +67,10 @@ jobs:
         run: flutter analyze
 
       - name: "Pub publish dry-run, package (only once)"
-        if: ${{ matrix.flutter == '3.44.x' }}
+        if: ${{ matrix.flutter == '3.47.x' }}
         run: dart pub publish --dry-run
 
       - name: "Pub publish dry-run, body_atlas (only once)"
-        if: ${{ matrix.flutter == '3.44.x' }}
+        if: ${{ matrix.flutter == '3.47.x' }}
         working-directory: packages/body_atlas
         run: dart pub publish --dry-run

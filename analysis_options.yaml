@@ -13,4 +13,13 @@ linter:
     avoid_dynamic_calls: true
     prefer_single_quotes: true
     use_null_aware_elements: true
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
 
