@@ -1,0 +1,24 @@
+name: body_atlas
+description: |
+  Pure Dart data for flutter_body_atlas: stable muscle ids, groups, display names and search.
+  Use it on a server or CLI that needs the same ids as the Flutter widget, without depending on Flutter.
+version: 0.1.0
+repository: "https://github.com/kit-g/flutter-body-atlas/tree/main/packages/body_atlas"
+issue_tracker: "https://github.com/kit-g/flutter-body-atlas/issues"
+homepage: "https://kit-g.github.io/flutter-body-atlas/"
+documentation: "https://pub.dev/documentation/body_atlas/latest/"
+
+environment:
+  sdk: ^3.10.8
+
+resolution: workspace
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0
+
+topics:
+  - anatomy
+  - fitness
+  - health
+  - education

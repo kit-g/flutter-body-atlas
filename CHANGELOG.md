@@ -1,3 +1,9 @@
+## 0.2.1
+
+* Muscle data and the `Atlas*` contracts moved to [body_atlas](https://pub.dev/packages/body_atlas), a pure Dart
+  package, so servers and CLIs can share the same ids without Flutter. Everything is re-exported from here: no import
+  changes needed.
+
 ## 0.2.0
 
 * `external_oblique_l` / `external_oblique_r` highlight again. The artwork draws the external oblique as eight

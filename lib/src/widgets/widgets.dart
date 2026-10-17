@@ -2,13 +2,13 @@ library;
 
 import 'dart:math' as math;
 
+import 'package:body_atlas/body_atlas.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_drawing/path_drawing.dart';
 import 'package:xml/xml.dart';
 
 import '../assets.dart';
-import '../models/contracts.dart';
 
 export 'widgets.dart' show BodyAtlasView;
 
