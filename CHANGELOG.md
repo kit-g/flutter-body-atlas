@@ -1,3 +1,12 @@
+## 0.2.3
+
+* Per-element semantics: every colored element, and every element once `onTapElement` is set, is exposed to screen
+  readers with a label (`elementSemanticLabel`, defaulting to `displayName`), positioned over the paths it covers.
+  Tappable elements are buttons whose semantic tap reports the element. An aggregate is one node over all its pieces.
+* `semanticLabel` labels the view as a whole (e.g. "Muscles trained this week").
+* The SVG and the gesture layer no longer add their own semantics: an unlabeled image node and a whole-view tap action
+  that hit-tested nothing.
+
 ## 0.2.2
 
 * Muscle data and the `Atlas*` contracts moved to [body_atlas](https://pub.dev/packages/body_atlas), a pure Dart

@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:body_atlas/body_atlas.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:path_drawing/path_drawing.dart';
 import 'package:xml/xml.dart';
 
