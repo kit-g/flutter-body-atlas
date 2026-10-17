@@ -70,6 +70,12 @@ application-level logic without fear of them changing.
 For a full list of available IDs and their corresponding anatomical names, refer to the `Muscle` enum or the
 `MuscleCatalog`.
 
+### Using the IDs Without Flutter
+
+The muscle data lives in [body_atlas](https://pub.dev/packages/body_atlas), a pure Dart package this one depends on and
+re-exports. A backend or CLI that stores or validates these IDs can depend on `body_atlas` alone and get the same
+`Muscle`, `MuscleGroup` and `MuscleCatalog` without pulling in Flutter.
+
 ### Aggregate IDs
 
 A few muscles are drawn as several paths rather than one — the external oblique, for example, is a fan of eight

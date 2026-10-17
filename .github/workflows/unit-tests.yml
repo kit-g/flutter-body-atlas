@@ -49,6 +49,14 @@ jobs:
       - name: "Run tests, package"
         run: flutter test
 
+      - name: "Analyze, body_atlas"
+        working-directory: packages/body_atlas
+        run: dart analyze
+
+      - name: "Run tests, body_atlas"
+        working-directory: packages/body_atlas
+        run: dart test
+
       - name: "Install dependencies, example"
         working-directory: example
         run: flutter pub get
@@ -59,4 +67,9 @@ jobs:
 
       - name: "Pub publish dry-run, package (only once)"
         if: ${{ matrix.flutter == '3.44.x' }}
+        run: dart pub publish --dry-run
+
+      - name: "Pub publish dry-run, body_atlas (only once)"
+        if: ${{ matrix.flutter == '3.44.x' }}
+        working-directory: packages/body_atlas
         run: dart pub publish --dry-run

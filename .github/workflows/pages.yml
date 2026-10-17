@@ -7,6 +7,7 @@ on:
     paths:
       - "example/**"
       - "lib/**"
+      - "packages/**"
       - "pubspec.yaml"
       - "assets/**"
       - ".github/workflows/pages.yml"
