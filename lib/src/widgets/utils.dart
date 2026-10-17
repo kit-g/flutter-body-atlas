@@ -56,6 +56,19 @@ final class _AtlasHitTester {
     return _AtlasHitTester(viewBox: viewBox, pathsInPaintOrder: paths);
   }
 
+  /// Bounds, in viewBox coordinates, of every path among [ids], or null when
+  /// this layer draws none of them.
+  Rect? boundsOf(Iterable<String> ids) {
+    final wanted = ids.toSet();
+    Rect? bounds;
+    for (final item in pathsInPaintOrder) {
+      if (!wanted.contains(item.id)) continue;
+      final rect = item.path.getBounds();
+      bounds = bounds?.expandToInclude(rect) ?? rect;
+    }
+    return bounds;
+  }
+
   /// Returns the SVG element id that contains the tap point, or null.
   String? hitTest(Offset localPoint, Size widgetSize) {
     final toViewBox = viewBox.inverse(widgetSize);
@@ -78,6 +91,20 @@ extension on Rect {
   ///
   /// Returns a matrix that converts widget-local coordinates -> viewBox coordinates.
   Matrix4 inverse(Size size) {
+    final forward = this.forward(size);
+
+    // inverse: widget -> viewBox
+    final inverse = Matrix4.identity();
+    final det = inverse.copyInverse(forward);
+
+    // not invertible (shouldn't happen unless size/viewBox are degenerate)
+    if (det == 0.0) return Matrix4.identity();
+
+    return inverse;
+  }
+
+  /// Returns a matrix that converts viewBox coordinates -> widget-local coordinates.
+  Matrix4 forward(Size size) {
     final vb = Size(width, height);
 
     // avoid division by zero.
@@ -98,18 +125,59 @@ extension on Rect {
     // 1) translate by -viewBox.topLeft
     // 2) scale
     // 3) translate by (dx, dy)
-    final forward = Matrix4.identity()
+    return Matrix4.identity()
       ..translateByDouble(dx, dy, 0.0, 1.0)
       ..scaleByDouble(scale, scale, 1.0, 1.0)
       ..translateByDouble(-left, -top, 0.0, 1.0);
+  }
+}
 
-    // inverse: widget -> viewBox
-    final inverse = Matrix4.identity();
-    final det = inverse.copyInverse(forward);
+typedef _ElementSemantics = ({Rect bounds, String label, VoidCallback? onTap});
 
-    // not invertible (shouldn't happen unless size/viewBox are degenerate)
-    if (det == 0.0) return Matrix4.identity();
+/// Paints nothing; describes each element to assistive tech, positioned over
+/// the path(s) it covers so a screen reader can walk the atlas by touch.
+final class _AtlasSemanticsPainter extends CustomPainter {
+  const _AtlasSemanticsPainter({
+    required this.viewBox,
+    required this.elements,
+    required this.textDirection,
+  });
 
-    return inverse;
+  final Rect viewBox;
+
+  /// Bounds are in viewBox coordinates.
+  final List<_ElementSemantics> elements;
+  final TextDirection textDirection;
+
+  @override
+  void paint(Canvas canvas, Size size) {}
+
+  @override
+  bool shouldRepaint(covariant _AtlasSemanticsPainter oldDelegate) => false;
+
+  @override
+  SemanticsBuilderCallback get semanticsBuilder {
+    return (size) {
+      final toWidget = viewBox.forward(size);
+      return [
+        for (final element in elements)
+          CustomPainterSemantics(
+            rect: MatrixUtils.transformRect(toWidget, element.bounds),
+            properties: SemanticsProperties(
+              label: element.label,
+              textDirection: textDirection,
+              button: element.onTap != null,
+              onTap: element.onTap,
+            ),
+          ),
+      ];
+    };
+  }
+
+  @override
+  bool shouldRebuildSemantics(covariant _AtlasSemanticsPainter oldDelegate) {
+    return oldDelegate.viewBox != viewBox ||
+        oldDelegate.textDirection != textDirection ||
+        !listEquals(oldDelegate.elements, elements);
   }
 }

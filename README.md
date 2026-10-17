@@ -111,6 +111,29 @@ The following types are the primary entry points for the package:
 - **Mobile**: Optimized for touch. While `onHoverOverElement` is technically available, it is rarely triggered on touch
   screens.
 
+## Accessibility
+
+Screen readers can walk the atlas element by element. Every colored element in `colorMapping` gets a semantics node
+positioned over its paths, and once `onTapElement` is set, every element does, announced as a button. A color alone
+doesn't say what it means, so put that in the label:
+
+```dart
+BodyAtlasView<MuscleInfo>
+(
+view: AtlasAsset.musclesFront,
+resolver: const MuscleResolver(),
+colorMapping: heat,
+semanticLabel: 'Muscles trained this week',
+elementSemanticLabel: (muscle) => '${muscle.displayName}: ${sets[muscle]}
+ sets
+'
+,
+)
+```
+
+Labels default to `displayName`. Pair a heat map with a text list as well; the atlas is navigable, but a list is
+quicker to scan.
+
 ## Attribution & Licensing
 
 ### Assets

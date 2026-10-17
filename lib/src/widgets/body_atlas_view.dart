@@ -75,6 +75,22 @@ class BodyAtlasView<I extends AtlasElementInfo> extends StatefulWidget {
   /// platforms and requires a non-null value to enable hover tracking.
   final ValueChanged<I?>? onHoverOverElement;
 
+  /// Accessibility label for the atlas as a whole.
+  ///
+  /// Read by screen readers before the individual elements; useful when the
+  /// view shows data rather than invites interaction, e.g. "Muscles trained
+  /// this week".
+  final String? semanticLabel;
+
+  /// Accessibility label for a single element.
+  ///
+  /// Every colored element in [colorMapping], and every element when
+  /// [onTapElement] is set, is exposed to assistive tech with this label,
+  /// positioned over the paths it covers. Defaults to
+  /// [AtlasElementInfo.displayName]. Use it to say what the color means,
+  /// e.g. `(m) => '${m.displayName}: 12 sets'`.
+  final String Function(I element)? elementSemanticLabel;
+
   const BodyAtlasView({
     super.key,
     required this.view,
@@ -84,6 +100,8 @@ class BodyAtlasView<I extends AtlasElementInfo> extends StatefulWidget {
     this.hoverColor,
     this.onTapElement,
     this.onHoverOverElement,
+    this.semanticLabel,
+    this.elementSemanticLabel,
   });
 
   @override
@@ -146,6 +164,8 @@ class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasVie
 
             Widget interactiveChild = GestureDetector(
               behavior: .opaque,
+              // its own tap action would hit-test the origin; elements carry theirs
+              excludeFromSemantics: true,
               onTapDown: switch ((widget.onTapElement, tester)) {
                 (ValueChanged<I> onTap, _AtlasHitTester tester) => (details) {
                   final box = _interactionKey.box;
@@ -162,7 +182,17 @@ class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasVie
                 },
                 _ => null,
               },
-              child: svg,
+              child: switch (tester) {
+                _AtlasHitTester tester => CustomPaint(
+                  foregroundPainter: _AtlasSemanticsPainter(
+                    viewBox: tester.viewBox,
+                    elements: _semanticsOf(tester),
+                    textDirection: Directionality.of(context),
+                  ),
+                  child: svg,
+                ),
+                null => svg,
+              },
             );
 
             if (isDesktop && tester != null && widget.onHoverOverElement != null) {
@@ -182,14 +212,51 @@ class _BodyAtlasViewState<I extends AtlasElementInfo> extends State<BodyAtlasVie
               );
             }
 
-            return SizedBox.expand(
-              key: _interactionKey,
-              child: interactiveChild,
+            return Semantics(
+              container: true,
+              explicitChildNodes: true,
+              image: widget.semanticLabel != null,
+              label: widget.semanticLabel,
+              child: SizedBox.expand(
+                key: _interactionKey,
+                child: interactiveChild,
+              ),
             );
           },
         );
       },
     );
+  }
+
+  /// Elements a screen reader can reach: every colored one (an aggregate as a
+  /// single node over all its pieces) and, when tappable, every other element
+  /// the resolver knows. Elements this layer doesn't draw are skipped.
+  List<_ElementSemantics> _semanticsOf(_AtlasHitTester tester) {
+    final elements = <I>{
+      for (final MapEntry(:key, :value) in widget.colorMapping?.entries ?? <MapEntry<I, Color?>>[])
+        if (value != null) key,
+    };
+
+    final onTap = widget.onTapElement;
+    if (onTap != null) {
+      final covered = {for (final element in elements) ...element.element.parts};
+      for (final (:id, path: _) in tester.pathsInPaintOrder) {
+        if (covered.contains(id)) continue;
+        final info = widget.resolver.tryById(id);
+        if (info != null) elements.add(info);
+      }
+    }
+
+    final labelOf = widget.elementSemanticLabel ?? (I element) => element.displayName;
+    return [
+      for (final element in elements)
+        if (tester.boundsOf(element.element.parts) case final bounds?)
+          (
+            bounds: bounds,
+            label: labelOf(element),
+            onTap: onTap == null ? null : () => onTap(element),
+          ),
+    ];
   }
 
   void _emit(String? id) {

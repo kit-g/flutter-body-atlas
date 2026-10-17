@@ -46,6 +46,8 @@ class SvgAsset extends StatelessWidget {
       fit: .contain,
       alignment: .center,
       package: AtlasAsset.package,
+      // BodyAtlasView describes the atlas itself, element by element
+      excludeFromSemantics: true,
       colorMapper: _AtlasColorMapper(
         highlightedColors: highlightedColors,
         hoveredIds: hoveredIds,
